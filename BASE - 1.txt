@@ -1,0 +1,39 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long 
+#define  nl "\n"
+#define f first
+#define s second
+const int mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(),a.end()
+#define forn(a, c) for (int (a) = 0; (a) < (c); (a)++) 
+#define cin(v) for(auto &i:v){cin>>i;}
+#define cout(v) for(auto &i:v){cout<<i<<" ";}cout<<nl;
+#define dbg(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); pri(_it, args); cout<<nl;}
+void pri(istream_iterator<string> it) {}
+template<typename T, typename... Args>
+void pri(istream_iterator<string> it, T a, Args... args) {cout << *it << "  " << a << nl;pri(++it, args...);}
+string dtobin(int n,int k = 0){string res = "";while(n>0 || k>0){k--;if(n&1){res += "1";}else{res += "0";}n>>= 1;}reverse(res.begin(),res.end());return res;}
+int binexp(int a,int b){if(b==0){return 1;}int res = 1;while(b){if(b&1){res*= a;}b>>=1; a *= a;}return res;}
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+
+void solve()
+{
+    
+}
+signed main()
+{
+    (ios_base::sync_with_stdio(false), cin.tie(NULL));
+    auto begin = std::chrono::high_resolution_clock::now();
+    int t;t = 1;
+    cin>>t;
+    for(int i = 1; i <= t; i++) 
+    {
+        //cout << "Case #" << i << ": ";
+        solve();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    cerr << "Time measured: " << elapsed.count() * 1e-9 << " seconds.\n"; 
+    return 0;
+}

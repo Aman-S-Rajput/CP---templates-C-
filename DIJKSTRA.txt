@@ -1,0 +1,22 @@
+void Dijkstra(int s, int n, vector<int> &dist, vector<int> &parent, vector<pair<int, int>> *adj) {
+    dist.assign(n, inf);
+    parent.assign(n, -1);
+    dist[s] = 0;
+    priority_queue <pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> q;
+    q.push({0, s});
+    while (!q.empty()) {
+        pair<int, int> here = q.top();
+        q.pop();
+        int v = here.s;
+        int d_v = here.f;
+        if (d_v != dist[v])
+            continue;
+        for (auto edge : adj[v]) {
+            if (dist[v] + edge.s < dist[edge.f]) {
+                dist[edge.f] = dist[v] + edge.s;
+                parent[edge.f] = v;
+                q.push({dist[edge.f], edge.f});
+            }
+        }
+    }
+}

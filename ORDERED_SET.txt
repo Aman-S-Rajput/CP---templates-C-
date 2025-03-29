@@ -1,0 +1,46 @@
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+#define int long long 
+#define nl "\n"
+#define all(a) a.begin(),a.end()
+#define out(x) cout<<#x<<" - >"<<x<<endl;
+#define forn(a, c) for (int a = 0; a < c; a++) 
+#define forl(a, b, c) for (int a = b; a <= c; a++) 
+#define forr(a, b, c) for (int a = b; a >= c; a--)
+
+ 
+typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>, __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update> ordered_set;
+
+ 
+ordered_set st;
+int orderkey(int x){ // if x is present in the ordered_set then will return the index of the element
+                     // else returns the index of just greater element in the set
+                       // # zero based indexing return type
+    return st.order_of_key(x);
+}
+int fndorder(int i)
+{                     // returns the element at index i and if is greater of smaller than possible size returns 0
+                        // i must be in zero based indexing style
+    return *st.find_by_order(i);
+}
+void erase(int x)
+{                // erases the element x if present else no change 
+    st.erase(x);
+}
+void solve(){
+    
+}
+ 
+signed main(){
+    ios_base::sync_with_stdio(false);cin.tie(NULL);
+    int tt;
+    tt = 1;
+    cin>>tt;
+    while(tt--)
+    {
+        solve();
+    }
+     
+}

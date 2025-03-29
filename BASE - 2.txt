@@ -1,0 +1,122 @@
+#include <bits/stdc++.h>
+// #include <ext/pb_ds/assoc_container.hpp>
+// #include <ext/pb_ds/tree_policy.hpp>
+#define fastread() (ios_base::sync_with_stdio(false), cin.tie(NULL));
+#define endl "\n"
+using namespace std;
+#define int long long
+#define ld long double
+#define pb(e) push_back(e)
+#define sv(a) sort(a.begin(),a.end())
+#define all(x) x.begin(),x.end()
+#define ff first 
+#define ss second
+#define mk make_pair
+#define eb emplace_back
+#define gcd(a,b) __gcd(a,b)
+#define lb lower_bound
+#define ub upper_bound
+#define sqrt sqrtl
+#define cin(v) for(auto &i:v){cin>>i;}
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+#define DEBUG
+#ifdef DEBUG
+    #define error(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); err(_it, args); }
+    void err(istream_iterator<string> it) {} template<typename T, typename... Args> void err(istream_iterator<string> it, T a, Args... args) {cerr << *it << " = " << a << endl;err(++it, args...);}
+#else
+    #define error(args...)   // Does nothing
+#endif
+const int mod=1e9+7,inf=1e18;
+// const int mod=998244353;
+const ld ep=1e-25;
+int lcm(int a,int b){ return a*(b/(__gcd(a,b)));}
+bool cmp(const pair<int,int> &a, const pair<int,int> &b){
+    return a.ss<b.ss;
+}
+template<typename T> void print(vector<T> v) {for(auto i: v) cout<<i<<" ";cout<<endl;}
+template<typename T> void print(set<T > v) {for(auto i: v) cout<<i<<" "; cout<<endl;}
+template<typename T>void print(multiset<T > v) {for(auto i: v) cout<<i<<" ";cout<<endl;}
+template<typename T> void print(map<T,T > v) {for(auto i: v) cout<<i.ff<<" "<<i.ss<<endl;}
+int bint(string s){
+    reverse(all(s));
+    int n=s.size(),a=0;
+    for(int i=0;i<n;i++) if(s[i]=='1') a+=(1<<i);
+    return a;
+}
+string bin(int num) {
+    if(num==0) return "0";
+    string str; 
+    while(num){ if(num & 1) str+='1';  else str+='0'; num>>=1; }
+    reverse(all(str));return str; 
+}
+int mex(set<int> &st){
+    int n=st.size();
+    for(int i=0;i<=n;i++) if(st.find(i)==st.end()) return i;    
+    return 0;
+}
+int isSubstring(string s1, string s2){
+    if (s2.find(s1) != string::npos) return s2.find(s1);
+    return -1;
+}
+int cbits(int n) {return __builtin_popcountll(n);}
+int bits(int n) {return 64-__builtin_clzll(n);}
+int binexp(int a,int b){
+    if(b==0) return 1;
+    int res=binexp(a,b/2);
+    if(b&1) return (a*((res*res)%mod))%mod;
+    else return (res*res)%mod;
+}
+int inverse(int a) {return binexp(a,mod-2);}
+
+// const int N = 1e5+69;
+// int fac[N+1];
+// void makeFac(){
+//     fac[0] = 1;
+//     for(int i=1;i<=N;i++){
+//         fac[i] = (fac[i-1]*i)%mod;
+//     }
+// }
+// int ncr(int n, int k) {
+//     if(k==0) return 1;
+//     if(k>n || k<0) return 0;
+//     return (fac[n] * inverse((fac[k] * fac[n - k]) % mod)) % mod;
+// }
+// int npr(int n, int k) {
+//     if(k>n || k<0) return 0;
+//     return (fac[n] * inverse( fac[n - k]) )% mod;
+// }
+// const int N = 1e5+5;
+// int f[N];
+// void seivef(){
+//     memset(f,-1,sizeof(f));
+//     f[0] = 1;
+//     f[1] = 1;
+//     for(int i = 2;i<N;i++){
+//         if(f[i] == -1){
+//             for(int j  = i;j<N;j+= i){
+//                 f[j] = i;
+//             }
+//         }
+//     }
+// }
+string query(int a,int b,int c,int d) {
+    cout << "? " <<a<<" "<<b<<" "<<c<<" "<<d<<endl;
+    string ret; cin >> ret; return ret;
+}
+
+void solve(){
+    //think twice code once
+    // if logic is correct, then try to find edge cases (otherwise why are you even writing the code in first place )
+    
+}
+
+signed main(){
+    fastread();
+    int tc=1;
+    // seivef();
+    cin>>tc;
+    // makeFac();
+    while(tc--){
+        solve();
+    }
+}

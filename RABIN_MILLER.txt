@@ -1,0 +1,92 @@
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+#define nl "\n"
+#define f first
+#define s second
+const ll mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(), a.end()
+#define forn(i, c) for (int i = 0; i < (c); i++)
+
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+
+// Modular exponentiation with overflow protection using __int128
+ll binpower(ll base, ll e, ll mod) {
+    ll result = 1;
+    base %= mod;
+    while (e) {
+        if (e & 1)
+            result = (__int128)result * base % mod; // Prevent overflow
+        base = (__int128)base * base % mod;
+        e >>= 1;
+    }
+    return result;
+}
+
+// Miller-Rabin composite check
+bool check_composite(ll n, ll a, ll d, int s) {
+    ll x = binpower(a, d, n);
+    if (x == 1 || x == n - 1)
+        return false;
+    for (int r = 1; r < s; r++) {
+        x = (__int128)x * x % n;
+        if (x == n - 1)
+            return false;
+    }
+    return true;
+}
+
+// Miller-Rabin Primality Test (deterministic for n ≤ 10^18)
+bool MillerRabin(ll n) {
+    if (n < 2)
+        return false;
+    if (n < 4)
+        return true;
+    if (n % 2 == 0)
+        return false;
+
+    ll d = n - 1;
+    int s = 0;
+    while (d % 2 == 0) {
+        d /= 2;
+        s++;
+    }
+
+    // Deterministic bases for n ≤ 10^18
+    vector<ll> test_bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+    for (ll a : test_bases) {
+        if (a >= n)
+            break;
+        if (check_composite(n, a, d, s))
+            return false;
+    }
+    return true;
+}
+
+void solve() {
+    // Process 10 numbers per test case
+    forn(i, 10) {
+        ll x;
+        cin >> x;
+        cout << MillerRabin(x) << nl;
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    auto begin = chrono::high_resolution_clock::now();
+    int t;
+    t = 1;
+    cin >> t;
+    for (int i = 1; i <= t; i++) {
+        // cout << "Case #" << i << ": ";
+        solve();
+    }
+    auto end = chrono::high_resolution_clock::now();
+    auto elapsed = chrono::duration_cast<chrono::nanoseconds>(end - begin);
+    cerr << "Time measured: " << elapsed.count() * 1e-9 << " seconds.\n";
+    return 0;
+}

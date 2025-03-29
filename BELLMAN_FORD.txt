@@ -1,0 +1,56 @@
+		// for single source root with negative weight edges
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long 
+#define  nl "\n"
+const int mod = 1e9+7;
+#define forn(a, c) for (int a = 0; a < c; a++) 
+const int N = 2505;
+ 
+ 
+signed main()
+{
+    int parent[N];
+    std::vector<array<int,3>> v;
+    int n, m;
+    cin>>n>>m;
+    forn(i, m){
+        int a, b, c;
+        cin>>a>>b>>c;--a, --b;
+        v.push_back({a,b , c});
+    }
+    vector<int>d(N, 1e18);
+    d[0] = 0;
+    int x = -1;
+    forn(i, n){
+        x = -1;
+        for(auto &y:v){
+            if(d[y[0]] + y[2] < d[y[1]]){
+                parent[y[1]] = y[0];
+                d[y[1]] = d[y[0]] + y[2];
+                x =  y[1] ;
+            }
+        }
+    }
+    
+ 
+    if(x == -1){
+        cout<<"NO\n";
+    }
+    else{
+        cout<<"YES\n";
+        for (int i = 0; i < n; ++i) {
+            x = parent[x];  
+        } 
+        
+        vector<int> cycle;
+        for (int v = x;; v = parent[v]) {
+            cycle.push_back(v);
+            if (v == x && cycle.size() > 1)
+                break;
+        }
+        reverse(cycle.begin(), cycle.end());
+        for(auto &x:cycle)cout<<x+1<<" ";
+ 
+    }
+}
