@@ -1,352 +1,696 @@
-BellMan Ford
-		// for single source root with negative weight edges
-#include<bits/stdc++.h>
-using namespace std;
-#define int long long 
-#define  nl "\n"
-const int mod = 1e9+7;
-#define forn(a, c) for (int a = 0; a < c; a++) 
-const int N = 2505;
- 
- 
-signed main()
-{
-    int parent[N];
-    std::vector<array<int,3>> v;
-    int n, m;
-    cin>>n>>m;
-    forn(i, m){
-        int a, b, c;
-        cin>>a>>b>>c;--a, --b;
-        v.push_back({a,b , c});
-    }
-    vector<int>d(N, 1e18);
-    d[0] = 0;
-    int x = -1;
-    forn(i, n){
-        x = -1;
-        for(auto &y:v){
-            if(d[y[0]] + y[2] < d[y[1]]){
-                parent[y[1]] = y[0];
-                d[y[1]] = d[y[0]] + y[2];
-                x =  y[1] ;
-            }
+TOPOLOGICAL SORT
+int n; // number of vertices
+vector<vector<int>> adj; // adjacency list of graph
+vector<bool> visited;
+vector<int> ans;
+
+void dfs(int v) {
+    visited[v] = true;
+    for (int u : adj[v]) {
+        if (!visited[u]) {
+            dfs(u);
         }
     }
-    
- 
-    if(x == -1){
-        cout<<"NO\n";
-    }
-    else{
-        cout<<"YES\n";
-        for (int i = 0; i < n; ++i) {
-            x = parent[x];  
-        } 
-        
-        vector<int> cycle;
-        for (int v = x;; v = parent[v]) {
-            cycle.push_back(v);
-            if (v == x && cycle.size() > 1)
-                break;
-        }
-        reverse(cycle.begin(), cycle.end());
-        for(auto &x:cycle)cout<<x+1<<" ";
- 
-    }
+    ans.push_back(v);
 }
 
-Custom Hash
-
-struct custom_hash {
-    static uint64_t splitmix64(uint64_t x) {
-        // http://xorshift.di.unimi.it/splitmix64.c
-        x += 0x9e3779b97f4a7c15;
-        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-        return x ^ (x >> 31);
+void topological_sort() {
+    visited.assign(n, false);
+    ans.clear();
+    for (int i = 0; i < n; ++i) {
+        if (!visited[i]) {
+            dfs(i);
+        }
     }
+    reverse(ans.begin(), ans.end());
+}
 
-    size_t operator()(uint64_t x) const {
-        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
-        return splitmix64(x + FIXED_RANDOM);
+GENERIC SEGMENT TREE
+
+#define ll long long
+#define all(x) x.begin(),x.end()
+template<typename Node, typename Update>
+struct SegTree {
+    vector<Node> tree;
+    vector<int> arr; // type may change
+    int n;
+    int s;
+    SegTree(int a_len, vector<int> &a) { // change if type updated
+        arr = a;
+        n = a_len;
+        s = 1;
+        while(s < 2 * n){
+            s = s << 1;
+        }
+        tree.resize(s); fill(all(tree), Node());
+        build(0, n - 1, 1);
+    }
+    void build(int start, int end, int index)  // Never change this
+    {
+        if (start == end)   {
+            tree[index] = Node(arr[start]);
+            return;
+        }
+        int mid = (start + end) / 2;
+        build(start, mid, 2 * index);
+        build(mid + 1, end, 2 * index + 1);
+        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
+    }
+    void update(int start, int end, int index, int query_index, Update &u)  // Never Change this
+    {
+        if (start == end) {
+            u.apply(tree[index]);
+            return;
+        }
+        int mid = (start + end) / 2;
+        if (mid >= query_index)
+            update(start, mid, 2 * index, query_index, u);
+        else
+            update(mid + 1, end, 2 * index + 1, query_index, u);
+        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
+    }
+    Node query(int start, int end, int index, int left, int right) { // Never change this
+        if (start > right || end < left)
+            return Node();
+        if (start >= left && end <= right)
+            return tree[index];
+        int mid = (start + end) / 2;
+        Node l, r, ans;
+        l = query(start, mid, 2 * index, left, right);
+        r = query(mid + 1, end, 2 * index + 1, left, right);
+        ans.merge(l, r);
+        return ans;
+    }
+    void make_update(int index, int val) {  // pass in as many parameters as required
+        Update new_update = Update(val); // may change
+        update(0, n - 1, 1, index, new_update);
+    }
+    Node make_query(int left, int right) {
+        return query(0, n - 1, 1, left, right);
     }
 };
 
-Cycle in DAG
+struct Node1 {
+    int val; // may change
+    Node1() { // Identity element
+        val = 0;    // may change
+    }
+    Node1(int p1) {  // Actual Node
+        val = p1; // may change
+    }
+    void merge(Node1 &l, Node1 &r) { // Merge two child nodes
+        val = l.val ^ r.val;  // may change
+    }
+};
 
-/* Priyansh Agarwal*/
-#include<bits/stdc++.h>
-#include<algorithm>
-#include<unordered_map>
-#include<vector>
-#include<unordered_set>
-#include<set>
-#include<map>
-#include<queue>
-#include<stack>
-#include<map>
+struct Update1 {
+    int val; // may change
+    Update1(int p1) { // Actual Update
+        val = p1; // may change
+    }
+    void apply(Node1 &a) { // apply update to given node
+        a.val = val; // may change
+    }
+};
+// SegTree<Node1,Update1>seg = SegTree<Node1,Update1>(n, v);
+
+
+
+RABIN MILLER
+
+
+#include <bits/stdc++.h>
 using namespace std;
+using ll = long long;
+
+#define nl "\n"
+#define f first
+#define s second
+const ll mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(), a.end()
+#define forn(i, c) for (int i = 0; i < (c); i++)
+
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+
+// Modular exponentiation with overflow protection using __int128
+ll binpower(ll base, ll e, ll mod) {
+    ll result = 1;
+    base %= mod;
+    while (e) {
+        if (e & 1)
+            result = (__int128)result * base % mod; // Prevent overflow
+        base = (__int128)base * base % mod;
+        e >>= 1;
+    }
+    return result;
+}
+
+// Miller-Rabin composite check
+bool check_composite(ll n, ll a, ll d, int s) {
+    ll x = binpower(a, d, n);
+    if (x == 1 || x == n - 1)
+        return false;
+    for (int r = 1; r < s; r++) {
+        x = (__int128)x * x % n;
+        if (x == n - 1)
+            return false;
+    }
+    return true;
+}
+
+// Miller-Rabin Primality Test (deterministic for n ≤ 10^18)
+bool MillerRabin(ll n) {
+    if (n < 2)
+        return false;
+    if (n < 4)
+        return true;
+    if (n % 2 == 0)
+        return false;
+
+    ll d = n - 1;
+    int s = 0;
+    while (d % 2 == 0) {
+        d /= 2;
+        s++;
+    }
+
+    // Deterministic bases for n ≤ 10^18
+    vector<ll> test_bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+    for (ll a : test_bases) {
+        if (a >= n)
+            break;
+        if (check_composite(n, a, d, s))
+            return false;
+    }
+    return true;
+}
+
+void solve() {
+    // Process 10 numbers per test case
+    forn(i, 10) {
+        ll x;
+        cin >> x;
+        cout << MillerRabin(x) << nl;
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    auto begin = chrono::high_resolution_clock::now();
+    int t;
+    t = 1;
+    cin >> t;
+    for (int i = 1; i <= t; i++) {
+        // cout << "Case #" << i << ": ";
+        solve();
+    }
+    auto end = chrono::high_resolution_clock::now();
+    auto elapsed = chrono::duration_cast<chrono::nanoseconds>(end - begin);
+    cerr << "Time measured: " << elapsed.count() * 1e-9 << " seconds.\n";
+    return 0;
+}
+
+PRIM
+
+const int INF = 1000000000;
+
+struct Edge {
+    int w = INF, to = -1;
+    bool operator<(Edge const& other) const {
+        return make_pair(w, to) < make_pair(other.w, other.to);
+    }
+};
+
+int n;
+vector<vector<Edge>> adj;
+
+void prim() {
+    int total_weight = 0;
+    vector<Edge> min_e(n);
+    min_e[0].w = 0;
+    set<Edge> q;
+    q.insert({0, 0});
+    vector<bool> selected(n, false);
+    for (int i = 0; i < n; ++i) {
+        if (q.empty()) {
+            cout << "No MST!" << endl;
+            exit(0);
+        }
+
+        int v = q.begin()->to;
+        selected[v] = true;
+        total_weight += q.begin()->w;
+        q.erase(q.begin());
+
+        if (min_e[v].to != -1)
+            cout << v << " " << min_e[v].to << endl;
+
+        for (Edge e : adj[v]) {
+            if (!selected[e.to] && e.w < min_e[e.to].w) {
+                q.erase({min_e[e.to].w, e.to});
+                min_e[e.to] = {e.w, v};
+                q.insert({e.w, e.to});
+            }
+        }
+    }
+
+    cout << total_weight << endl;
+}
+
+PRIM UPDATED
+
+// Priyansh Agarwal
+// Check out my Youtube Channel: https://www.youtube.com/c/PriyanshAgarwal
+
+#include<bits/stdc++.h>
+// #include<ext/pb_ds/assoc_container.hpp>
+// #include<ext/pb_ds/tree_policy.hpp>
+
+using namespace std;
+using namespace chrono;
+// using namespace __gnu_pbds;
+
 #define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)
 #define MOD 1000000007
 #define MOD1 998244353
+#define INF 1e18
 #define nline "\n"
 #define pb push_back
+#define ppb pop_back
 #define mp make_pair
 #define ff first
 #define ss second
 #define PI 3.141592653589793238462
-#define debug(x) cout << #x << " " << x <<endl;
-#define set_bits __builtin_popcount
+#define set_bits __builtin_popcountll
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+
+#ifdef Priyansh31dec
+#define debug(x) cerr << #x <<" "; _print(x); cerr << endl;
+#else
+#define debug(x);
+#endif
+
 typedef long long ll;
 typedef unsigned long long ull;
 typedef long double lld;
+// typedef tree<pair<ll, ll>, null_type, less<pair<ll, ll>>, rb_tree_tag, tree_order_statistics_node_update > pbds; // find_by_order, order_of_key
+
+void _print(ll t) {cerr << t;}
+void _print(int t) {cerr << t;}
+void _print(string t) {cerr << t;}
+void _print(char t) {cerr << t;}
+void _print(lld t) {cerr << t;}
+void _print(double t) {cerr << t;}
+void _print(ull t) {cerr << t;}
+
+template <class T, class V> void _print(pair <T, V> p);
+template <class T> void _print(vector <T> v);
+template <class T> void _print(set <T> v);
+template <class T, class V> void _print(map <T, V> v);
+template <class T> void _print(multiset <T> v);
+template <class T, class V> void _print(pair <T, V> p) {cerr << "{"; _print(p.ff); cerr << ","; _print(p.ss); cerr << "}";}
+template <class T> void _print(vector <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
+template <class T> void _print(set <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
+template <class T> void _print(multiset <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
+template <class T, class V> void _print(map <T, V> v) {cerr << "[ "; for (auto i : v) {_print(i); cerr << " ";} cerr << "]";}
+// void _print(pbds v) {cerr << "[ "; for (auto i : v) {_print(i); cerr << " ";} cerr << "]";}
+
 /*---------------------------------------------------------------------------------------------------------------------------*/
 ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
 ll expo(ll a, ll b, ll mod) {ll res = 1; while (b > 0) {if (b & 1)res = (res * a) % mod; a = (a * a) % mod; b = b >> 1;} return res;}
-void extendgcd(ll a, ll b, ll*v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;} //pass an arry of size 3
+void extendgcd(ll a, ll b, ll*v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;} //pass an arry of size1 3
 ll mminv(ll a, ll b) {ll arr[3]; extendgcd(a, b, arr); return arr[0];} //for non prime b
 ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
 bool revsort(ll a, ll b) {return a > b;}
 void swap(int &x, int &y) {int temp = x; x = y; y = temp;}
-ll combination(ll n, ll r, ll m, ll* fact) {ll val1 = fact[n]; ll val2 = mminvprime(fact[r], m); ll val3 = mminvprime(fact[n - r], m); return ((val1 * val2) % m * val3) % m;}
+ll combination(ll n, ll r, ll m, ll *fact, ll *ifact) {ll val1 = fact[n]; ll val2 = ifact[n - r]; ll val3 = ifact[r]; return (((val1 * val2) % m) * val3) % m;}
 void google(int t) {cout << "Case #" << t << ": ";}
+vector<ll> sieve(int n) {int*arr = new int[n + 1](); vector<ll> vect; for (ll i = 2; i <= n; i++)if (arr[i] == 0) {vect.push_back(i); for (ll j = 2 * i; j <= n; j += i)arr[j] = 1;} return vect;}
+ll mod_add(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a + b) % m) + m) % m;}
+ll mod_mul(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a * b) % m) + m) % m;}
+ll mod_sub(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}
+ll mod_div(ll a, ll b, ll m) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m
+ll phin(ll n) {ll number = n; if (n % 2 == 0) {number /= 2; while (n % 2 == 0) n /= 2;} for (ll i = 3; i <= sqrt(n); i += 2) {if (n % i == 0) {while (n % i == 0)n /= i; number = (number / i * (i - 1));}} if (n > 1)number = (number / n * (n - 1)) ; return number;} //O(sqrt(N))
+void precision(int a) {cout << setprecision(a) << fixed;}
 /*--------------------------------------------------------------------------------------------------------------------------*/
-bool dfs(int start, vector<int>*edges, bool *w, bool *g, bool *b)
-{
-	w[start] = false;
-	g[start] = true;
-	for (auto i : edges[start])
-	{
-		if (g[i])
-			return false;
-		if (w[i])
-		{
-			bool ans = dfs(i, edges, w, g, b);
-			if (!ans)
-				return false;
-		}
-	}
-	g[start] = false;
-	b[start] = true;
-	return true;
-}
-bool check_cycle(int n, vector<int>*edges)
-{
-	bool *white = new bool[n]();
-	bool *grey = new bool[n]();
-	bool *black = new bool[n]();
-	for (int i = 0; i < n; i++)
-		white[i] = true;
-	for (int i = 0; i < n; i++)
-	{
-		if (white[i])
-		{
-			bool ans = dfs(i, edges, white, grey, black);
-			if (!ans)
-				return true;
-		}
-	}
-	return false;
-}
-int main()
-{
-	fastio();
-#ifndef ONLINE_JUDGE
-	freopen("Input.txt", "r", stdin);
-	freopen("Output.txt", "w", stdout);
-	freopen("Error.txt", "w", stderr);
-#endif
+
+
+void solve() {
 	int n, m;
 	cin >> n >> m;
-	vector<int>*edges = new vector<int>[n];
-	for (int i = 0; i < m; i++)
-	{
-		int u, v;
-		cin >> u >> v;
-		u--;
-		v--;
-		edges[u].pb(v);
+	vector<pair<int, ll>> *edges = new vector<pair<int, ll>>[n];
+	for (int i = 0; i < m; i++) {
+		int a, b, c;
+		cin >> a >> b >> c;
+		edges[a].pb({b, c});
+		edges[b].pb({a, c});
 	}
-	bool check = check_cycle(n, edges);
-	if (check)
-		cout << "IMPOSSIBLE" << endl;
-	return 0;
+	set<pair<ll, int>> pq;
+	vector<ll> dist(n, INF);
+	dist[0] = 0;
+	vector<bool> visited(n);
+	vector<int> parent(n, -1);
+	pq.insert({0, 0});
+	for (int i = 0; i < n; i++) {
+		pair<ll, int> top = *pq.begin();
+		pq.erase(top);
+		int best = top.ss;
+		visited[best] = true;
+		for (auto i : edges[best]) {
+			if ((!visited[i.ff]) && dist[i.ff] > i.ss) {
+				pq.erase({dist[i.ff], i.ff});
+				dist[i.ff] = i.ss;
+				pq.insert({dist[i.ff], i.ff});
+				parent[i.ff] = best;
+			}
+		}
+	}
+	for (int i = 1; i < n; i++) {
+		if (parent[i] < i) {
+			cout << parent[i] << " " << i << " " << dist[i] << nline;
+		} else {
+			cout << i << " " << parent[i] << " " << dist[i] << nline;
+		}
+	}
 }
 
+int main() {
+#ifdef Priyansh31dec
+	freopen("Error.txt", "w", stderr);
+#endif
+	fastio();
+	auto start1 = high_resolution_clock::now();
+	solve();
+	auto stop1 = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(stop1 - start1);
+#ifdef Priyansh31dec
+	cerr << "Time: " << duration . count() / 1000 << endl;
+#endif
+}
 
-Dijkstra
-void Dijkstra(int s, int n, vector<int> &dist, vector<int> &parent, vector<pair<int, int>> *adj) {
-    dist.assign(n, inf);
-    parent.assign(n, -1);
-    dist[s] = 0;
-    priority_queue <pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> q;
-    q.push({0, s});
-    while (!q.empty()) {
-        pair<int, int> here = q.top();
-        q.pop();
-        int v = here.s;
-        int d_v = here.f;
-        if (d_v != dist[v])
-            continue;
-        for (auto edge : adj[v]) {
-            if (dist[v] + edge.s < dist[edge.f]) {
-                dist[edge.f] = dist[v] + edge.s;
-                parent[edge.f] = v;
-                q.push({dist[edge.f], edge.f});
+PHI PRECOMPUTE
+
+void precompute() {
+	for (int i = 1; i < N; i++) { phi[i] = i; }
+	for (int i = 2; i < N; i++) {
+		// If i is prime
+		if (phi[i] == i) {
+			for (int j = i; j < N; j += i) { phi[j] -= phi[j] / i; }
+		}
+	}
+}
+
+PHI FUNCTION
+
+int phi_f(int n) {
+	int ans = n;
+	for (int p = 2; p * p <= n; p++) {
+		if (n % p == 0) {
+			while (n % p == 0) { n /= p; }
+			ans -= ans / p;
+		}
+	}
+	if (n > 1) { ans -= ans / n; }
+	return ans;
+}
+
+ORDERED_SET
+
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+#define int long long 
+#define nl "\n"
+#define all(a) a.begin(),a.end()
+#define out(x) cout<<#x<<" - >"<<x<<endl;
+#define forn(a, c) for (int a = 0; a < c; a++) 
+#define forl(a, b, c) for (int a = b; a <= c; a++) 
+#define forr(a, b, c) for (int a = b; a >= c; a--)
+
+ 
+typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>, __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update> ordered_set;
+
+ 
+ordered_set st;
+int orderkey(int x){ // if x is present in the ordered_set then will return the index of the element
+                     // else returns the index of just greater element in the set
+                       // # zero based indexing return type
+    return st.order_of_key(x);
+}
+int fndorder(int i)
+{                     // returns the element at index i and if is greater of smaller than possible size returns 0
+                        // i must be in zero based indexing style
+    return *st.find_by_order(i);
+}
+void erase(int x)
+{                // erases the element x if present else no change 
+    st.erase(x);
+}
+void solve(){
+    
+}
+ 
+signed main(){
+    ios_base::sync_with_stdio(false);cin.tie(NULL);
+    int tt;
+    tt = 1;
+    cin>>tt;
+    while(tt--)
+    {
+        solve();
+    }
+     
+}
+
+NTH FIBONACCI NUMBER
+
+vector<vector<int>> identityMatrix = {
+    {1, 0}, 
+    {0, 1}
+};
+vector<vector<int>> result = {
+    {0, 0},
+    {0, 0}
+};
+
+void multiply(vector<vector<int>> a, vector<vector<int>> b) {
+    vector<vector<int>> temp(2, vector<int>(2, 0));
+    for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < 2; j++) {
+            for(int k = 0; k < 2; k++) {
+                temp[i][k] = (temp[i][k] + a[i][j] * b[j][k]) % mod;
             }
         }
     }
+    result = temp;
 }
 
-Distinct Range query
-
-bool compare(pair<pair<int, int>, int>& a, pair<pair<int, int>, int>& b){
-    return a.f.s < b.f.s;
-}
-#define sz(x) x.size()
-void update(int index, vector<int>& bit, int value){
-    for(; index < sz(bit); index += (index & (-index))){
-        bit[index] += value;
+void matrixExpo(vector<vector<int>> matrix, int n) {
+    if(n == 0) {
+        result = identityMatrix;
+        return;
+    }
+    matrixExpo(matrix, n / 2);
+    multiply(result, result);
+    if(n & 1) {
+        multiply(result, matrix);
     }
 }
-int query(int index, vector<int>& bit){
-    int sum = 0;
-    for(; index > 0; index -= (index & (-index))){
-        sum += bit[index];
-    }
-    return sum;
-}
-vector<int> distinctQueries(int n, int q, vector<int>& arr, vector<pair<int, int>>& queries){
-    map<int, int> compression;
-    int prev = 0;
-    for(auto &i : arr){
-        if(compression.find(i) == compression.end()){
-            compression[i] = prev;
-            prev++;
-        }
-        i = compression[i];
-    }
-    vector<int> lastIndex(sz(compression), -1);
-    vector<pair<pair<int, int>, int>> tempQueries(q);
-    for(int i = 0; i < q; i++){
-        tempQueries[i].f.f = queries[i].f + 1;
-        tempQueries[i].f.s = queries[i].s + 1;
-        tempQueries[i].s = i;
-    }
-    vector<int> ans(q);
-    sort(all(tempQueries), compare);
-    int num = 0;
-    vector<int> bit(n + 1);
-    for(int i = 0; i < n; i++){
-        if(lastIndex[arr[i]] != -1){
-            update(lastIndex[arr[i]] + 1, bit, -1);
-        }
-        lastIndex[arr[i]] = i;
-        update(i + 1, bit, 1);
-        while(num < q && tempQueries[num].f.s == i + 1){
-            int index = tempQueries[num].s;
-            ans[index] = query(i + 1, bit) - query(tempQueries[num].f.f - 1, bit);
-            num++;
-        }
-    }
-    return ans;
+
+int nthFibonacciNumber(int n, int F0, int F1) { // Now accepts F0 and F1
+    if(n == 0) return F0;
+    if(n == 1) return F1;
+    
+    vector<vector<int>> baseMatrix = {
+        {1, 1},
+        {1, 0}
+    };
+
+    matrixExpo(baseMatrix, n - 1);
+    
+    // Compute Fibonacci using custom F0 and F1
+    return (result[0][0] * F1 + result[0][1] * F0) % mod;
 }
 
+NCR
+const int N = 1e6+6;
+vector<int>fac;
+vector<int> makefac(int n = N, int m = mod)
+{
+    vector<int>f(n,-1);
+    f[0] = f[1] = 1;
+    for(int i = 2; i < n ; i++){
+        f[i] = (f[i-1]*i)%m;
+    }
+    return f;
+}
+int modbinexp(int a,int b, int m = mod){
+    if(b==0){return 1;}
+    int res = 1;
+    while(b){if(b&1){res= (a*res)%m;}b>>=1; a = (a*a)%m;}return (res%m);
+}
+int modInverse(int n){return modbinexp(n, mod-2);}
+int nck(int n,int k){
+    // Distribute n stuff among k things where both n and k are not unique 
+    // if n is unique multiply by (n!) and if k is unique multiply by ((n-k)!)
+    if(n>= N || (k>= N)){
+        cout<<"Increase N\n";return -1;
+    }
+    int p = fac[n];p = (p*modInverse(fac[n-k]))%mod;p = (p*modInverse(fac[k]))%mod;
+    return p;
+}
 
-DSU
+MODULO INTEGER
+const int MOD = 1e9 + 7;
 
-struct DSU {
-    std::vector<int> f, siz;
-    
-    DSU() {}
-    DSU(int n) {
-        init(n);
-    }
-    
-    void init(int n) {
-        f.resize(n);
-        std::iota(f.begin(), f.end(), 0);
-        siz.assign(n, 1);
-    }
-    
-    int find(int x) {
-        while (x != f[x]) {
-            x = f[x] = f[f[x]];
+struct mi {
+	int v;
+	explicit operator int() const { return v; }
+	mi() { v = 0; }
+	mi(long long _v) : v(_v % MOD) { v += (v < 0) * MOD; }
+};
+mi &operator+=(mi &a, mi b) {
+	if ((a.v += b.v) >= MOD) a.v -= MOD;
+	return a;
+}
+mi &operator-=(mi &a, mi b) {
+	if ((a.v -= b.v) < 0) a.v += MOD;
+	return a;
+}
+mi operator+(mi a, mi b) { return a += b; }
+mi operator-(mi a, mi b) { return a -= b; }
+mi operator*(mi a, mi b) { return mi((long long)a.v * b.v); }
+mi &operator*=(mi &a, mi b) { return a = a * b; }
+mi pow(mi a, long long p) {
+	assert(p >= 0);
+	return p == 0 ? 1 : pow(a * a, p / 2) * (p & 1 ? a : 1);
+}
+mi inv(mi a) {
+	assert(a.v != 0);
+	return pow(a, MOD - 2);
+}
+mi operator/(mi a, mi b) { return a * inv(b); }
+
+LAZY SEGMENT TREE
+
+
+template<typename Node, typename Update>
+struct LazySGT {
+    vector<Node> tree;
+    vector<bool> lazy;
+    vector<Update> updates;
+    vector<int> arr; // type may change
+    int n;
+    int s;
+    LazySGT(int a_len, vector<int> &a) { // change if type updated
+        arr = a;
+        n = a_len;
+        s = 1;
+        while(s < 2 * n){
+            s = s << 1;
         }
-        return x;
+        tree.resize(s); fill(all(tree), Node());
+        lazy.resize(s); fill(all(lazy), false);
+        updates.resize(s); fill(all(updates), Update());
+        build(0, n - 1, 1);
     }
-    
-    bool same(int x, int y) {
-        return find(x) == find(y);
-    }
-    
-    bool merge(int x, int y) {
-        x = find(x);
-        y = find(y);
-        if (x == y) {
-            return false;
+    void build(int start, int end, int index) { // Never change this
+        if (start == end)   {
+            tree[index] = Node(arr[start]);
+            return;
         }
-        siz[x] += siz[y];
-        f[y] = x;
-        return true;
+        int mid = (start + end) / 2;
+        build(start, mid, 2 * index);
+        build(mid + 1, end, 2 * index + 1);
+        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
     }
-    
-    int size(int x) {
-        return siz[find(x)];
+    void pushdown(int index, int start, int end){
+        if(lazy[index]){
+            int mid = (start + end) / 2;
+            apply(2 * index, start, mid, updates[index]);
+            apply(2 * index + 1, mid + 1, end, updates[index]);
+            updates[index] = Update();
+            lazy[index] = 0;
+        }
+    }
+    void apply(int index, int start, int end, Update& u){
+        if(start != end){
+            lazy[index] = 1;
+            updates[index].combine(u, start, end);
+        }
+        u.apply(tree[index], start, end);
+    }
+    void update(int start, int end, int index, int left, int right, Update& u) {  // Never Change this
+        if(start > right || end < left)
+            return;
+        if(start >= left && end <= right){
+            apply(index, start, end, u);
+            return;
+        }
+        pushdown(index, start, end);
+        int mid = (start + end) / 2;
+        update(start, mid, 2 * index, left, right, u);
+        update(mid + 1, end, 2 * index + 1, left, right, u);
+        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
+    }
+    Node query(int start, int end, int index, int left, int right) { // Never change this
+        if (start > right || end < left)
+            return Node();
+        if (start >= left && end <= right){
+            pushdown(index, start, end);
+            return tree[index];
+        }
+        pushdown(index, start, end);
+        int mid = (start + end) / 2;
+        Node l, r, ans;
+        l = query(start, mid, 2 * index, left, right);
+        r = query(mid + 1, end, 2 * index + 1, left, right);
+        ans.merge(l, r);
+        return ans;
+    }
+    void make_update(int left, int right, int val) {  // pass in as many parameters as required
+        Update new_update = Update(val); // may change
+        update(0, n - 1, 1, left, right, new_update);
+    }
+    Node make_query(int left, int right) {
+        return query(0, n - 1, 1, left, right);
     }
 };
 
-Extended Euclidien
-
-int gcd(int a, int b, int& x, int& y) {
-    x = 1, y = 0;
-    int x1 = 0, y1 = 1, a1 = a, b1 = b;
-    while (b1) {
-        int q = a1 / b1;
-        tie(x, x1) = make_tuple(x1, x - q * x1);
-        tie(y, y1) = make_tuple(y1, y - q * y1);
-        tie(a1, b1) = make_tuple(b1, a1 - q * b1);
+struct Node1 {
+    int val; // may change
+    Node1() { // Identity element
+        val = 0;    // may change
     }
-    return a1;
-}
+    Node1(int p1) {  // Actual Node
+        val = p1; // may change
+    }
+    void merge(Node1 &l, Node1 &r) { // Merge two child nodes
+        val = l.val + r.val;  // may change
+    }
+};
 
-INT128.
-// int128 bit for numbers larger than 1e18. Will support numbers till 1e36
-// Comment out everything related to PBDS while using this
-// Put all the code in the same order
-
-
-// Typedef to ell
-typedef __int128 ell;
-
-// For printing
-std::ostream&
-operator<<( std::ostream& dest, __int128_t value ) {
-	std::ostream::sentry s( dest );
-	if ( s ) {
-		__uint128_t tmp = value < 0 ? -value : value; char buffer[ 128 ];
-		char* d = std::end( buffer );
-		do {	-- d; *d = "0123456789"[ tmp % 10 ]; tmp /= 10;} while ( tmp != 0 );
-		if ( value < 0 ) {-- d; *d = '-';}
-		int len = std::end( buffer ) - d;
-		if ( dest.rdbuf()->sputn( d, len ) != len ) {dest.setstate( std::ios_base::badbit );}
-	}
-	return dest;
-}
-
-// For reading _int128 to_read = read()
-__int128 read() {
-	__int128 x = 0, f = 1;
-	char ch = getchar();
-	while (ch < '0' || ch > '9') {if (ch == '-') f = -1; ch = getchar();}
-	while (ch >= '0' && ch <= '9') {x = x * 10 + ch - '0'; ch = getchar();}
-	return x * f;
-}
-
-// For debugging
-void _print(ell t) {cerr << t;}
-
+struct Update1 {
+    int val; // may change
+    Update1(){ // Identity update
+        val = 0;
+    }
+    Update1(int val1) { // Actual Update
+        val = val1;
+    }
+    void apply(Node1 &a, int start, int end) { // apply update to given node
+        a.val = val * (end - start + 1); // may change
+    }
+    void combine(Update1& new_update, int start, int end){
+        val = new_update.val;
+    }
+};
 
 KRUSKAL
 
@@ -490,567 +834,225 @@ int main() {
 #endif
 }
 
-LAZY SGT
+INT128
+
+// int128 bit for numbers larger than 1e18. Will support numbers till 1e36
+// Comment out everything related to PBDS while using this
+// Put all the code in the same order
 
 
-template<typename Node, typename Update>
-struct LazySGT {
-    vector<Node> tree;
-    vector<bool> lazy;
-    vector<Update> updates;
-    vector<int> arr; // type may change
-    int n;
-    int s;
-    LazySGT(int a_len, vector<int> &a) { // change if type updated
-        arr = a;
-        n = a_len;
-        s = 1;
-        while(s < 2 * n){
-            s = s << 1;
+// Typedef to ell
+typedef __int128 ell;
+
+// For printing
+std::ostream&
+operator<<( std::ostream& dest, __int128_t value ) {
+	std::ostream::sentry s( dest );
+	if ( s ) {
+		__uint128_t tmp = value < 0 ? -value : value; char buffer[ 128 ];
+		char* d = std::end( buffer );
+		do {	-- d; *d = "0123456789"[ tmp % 10 ]; tmp /= 10;} while ( tmp != 0 );
+		if ( value < 0 ) {-- d; *d = '-';}
+		int len = std::end( buffer ) - d;
+		if ( dest.rdbuf()->sputn( d, len ) != len ) {dest.setstate( std::ios_base::badbit );}
+	}
+	return dest;
+}
+
+// For reading _int128 to_read = read()
+__int128 read() {
+	__int128 x = 0, f = 1;
+	char ch = getchar();
+	while (ch < '0' || ch > '9') {if (ch == '-') f = -1; ch = getchar();}
+	while (ch >= '0' && ch <= '9') {x = x * 10 + ch - '0'; ch = getchar();}
+	return x * f;
+}
+
+// For debugging
+void _print(ell t) {cerr << t;}
+
+EXTENDED EUCLIDEAN
+
+int gcd(int a, int b, int& x, int& y) {
+    x = 1, y = 0;
+    int x1 = 0, y1 = 1, a1 = a, b1 = b;
+    while (b1) {
+        int q = a1 / b1;
+        tie(x, x1) = make_tuple(x1, x - q * x1);
+        tie(y, y1) = make_tuple(y1, y - q * y1);
+        tie(a1, b1) = make_tuple(b1, a1 - q * b1);
+    }
+    return a1;
+}
+
+DSU
+
+struct DSU {
+    std::vector<int> f, siz;
+    
+    DSU() {}
+    DSU(int n) {
+        init(n);
+    }
+    
+    void init(int n) {
+        f.resize(n);
+        std::iota(f.begin(), f.end(), 0);
+        siz.assign(n, 1);
+    }
+    
+    int find(int x) {
+        while (x != f[x]) {
+            x = f[x] = f[f[x]];
         }
-        tree.resize(s); fill(all(tree), Node());
-        lazy.resize(s); fill(all(lazy), false);
-        updates.resize(s); fill(all(updates), Update());
-        build(0, n - 1, 1);
+        return x;
     }
-    void build(int start, int end, int index) { // Never change this
-        if (start == end)   {
-            tree[index] = Node(arr[start]);
-            return;
+    
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+    
+    bool merge(int x, int y) {
+        x = find(x);
+        y = find(y);
+        if (x == y) {
+            return false;
         }
-        int mid = (start + end) / 2;
-        build(start, mid, 2 * index);
-        build(mid + 1, end, 2 * index + 1);
-        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
+        siz[x] += siz[y];
+        f[y] = x;
+        return true;
     }
-    void pushdown(int index, int start, int end){
-        if(lazy[index]){
-            int mid = (start + end) / 2;
-            apply(2 * index, start, mid, updates[index]);
-            apply(2 * index + 1, mid + 1, end, updates[index]);
-            updates[index] = Update();
-            lazy[index] = 0;
-        }
-    }
-    void apply(int index, int start, int end, Update& u){
-        if(start != end){
-            lazy[index] = 1;
-            updates[index].combine(u, start, end);
-        }
-        u.apply(tree[index], start, end);
-    }
-    void update(int start, int end, int index, int left, int right, Update& u) {  // Never Change this
-        if(start > right || end < left)
-            return;
-        if(start >= left && end <= right){
-            apply(index, start, end, u);
-            return;
-        }
-        pushdown(index, start, end);
-        int mid = (start + end) / 2;
-        update(start, mid, 2 * index, left, right, u);
-        update(mid + 1, end, 2 * index + 1, left, right, u);
-        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
-    }
-    Node query(int start, int end, int index, int left, int right) { // Never change this
-        if (start > right || end < left)
-            return Node();
-        if (start >= left && end <= right){
-            pushdown(index, start, end);
-            return tree[index];
-        }
-        pushdown(index, start, end);
-        int mid = (start + end) / 2;
-        Node l, r, ans;
-        l = query(start, mid, 2 * index, left, right);
-        r = query(mid + 1, end, 2 * index + 1, left, right);
-        ans.merge(l, r);
-        return ans;
-    }
-    void make_update(int left, int right, int val) {  // pass in as many parameters as required
-        Update new_update = Update(val); // may change
-        update(0, n - 1, 1, left, right, new_update);
-    }
-    Node make_query(int left, int right) {
-        return query(0, n - 1, 1, left, right);
+    
+    int size(int x) {
+        return siz[find(x)];
     }
 };
 
-struct Node1 {
-    int val; // may change
-    Node1() { // Identity element
-        val = 0;    // may change
-    }
-    Node1(int p1) {  // Actual Node
-        val = p1; // may change
-    }
-    void merge(Node1 &l, Node1 &r) { // Merge two child nodes
-        val = l.val + r.val;  // may change
-    }
-};
+DISTINCT RANGE QUERIES
 
-struct Update1 {
-    int val; // may change
-    Update1(){ // Identity update
-        val = 0;
+bool compare(pair<pair<int, int>, int>& a, pair<pair<int, int>, int>& b){
+    return a.f.s < b.f.s;
+}
+#define sz(x) x.size()
+void update(int index, vector<int>& bit, int value){
+    for(; index < sz(bit); index += (index & (-index))){
+        bit[index] += value;
     }
-    Update1(int val1) { // Actual Update
-        val = val1;
+}
+int query(int index, vector<int>& bit){
+    int sum = 0;
+    for(; index > 0; index -= (index & (-index))){
+        sum += bit[index];
     }
-    void apply(Node1 &a, int start, int end) { // apply update to given node
-        a.val = val * (end - start + 1); // may change
+    return sum;
+}
+vector<int> distinctQueries(int n, int q, vector<int>& arr, vector<pair<int, int>>& queries){
+    map<int, int> compression;
+    int prev = 0;
+    for(auto &i : arr){
+        if(compression.find(i) == compression.end()){
+            compression[i] = prev;
+            prev++;
+        }
+        i = compression[i];
     }
-    void combine(Update1& new_update, int start, int end){
-        val = new_update.val;
+    vector<int> lastIndex(sz(compression), -1);
+    vector<pair<pair<int, int>, int>> tempQueries(q);
+    for(int i = 0; i < q; i++){
+        tempQueries[i].f.f = queries[i].f + 1;
+        tempQueries[i].f.s = queries[i].s + 1;
+        tempQueries[i].s = i;
     }
-};
+    vector<int> ans(q);
+    sort(all(tempQueries), compare);
+    int num = 0;
+    vector<int> bit(n + 1);
+    for(int i = 0; i < n; i++){
+        if(lastIndex[arr[i]] != -1){
+            update(lastIndex[arr[i]] + 1, bit, -1);
+        }
+        lastIndex[arr[i]] = i;
+        update(i + 1, bit, 1);
+        while(num < q && tempQueries[num].f.s == i + 1){
+            int index = tempQueries[num].s;
+            ans[index] = query(i + 1, bit) - query(tempQueries[num].f.f - 1, bit);
+            num++;
+        }
+    }
+    return ans;
+}
 
-NCR
+DIJKSTRA
 
-const int N = 1e6+6;
-vector<int>fac;
-vector<int> makefac(int n = N, int m = mod)
+#include <bits/stdc++.h>
+
+using namespace std;
+
+const int inf = 1e7;
+
+int main()
 {
-    vector<int>f(n,-1);
-    f[0] = f[1] = 1;
-    for(int i = 2; i < n ; i++){
-        f[i] = (f[i-1]*i)%m;
+    int n, m;
+    cout << "Enter number of Vertex: ";
+    cin >> n;
+    cout << "\nEnter number of Edges: ";
+    cin >> m;
+
+    vector<int> distance(n + 1, inf);
+
+    vector<vector<pair<int, int>>> graph(n + 1);
+
+    cout << "\nEnter all the nodes and weight between two nodes: format(u, v, w)" << endl;
+
+    for (int i = 0; i < m; i++)
+    {
+        int u, v, w;
+
+        cin >> u >> v >> w;
+
+        graph[u].push_back({v, w});
+
+        graph[v].push_back({u, w});
     }
-    return f;
-}
-int modbinexp(int a,int b, int m = mod){
-    if(b==0){return 1;}
-    int res = 1;
-    while(b){if(b&1){res= (a*res)%m;}b>>=1; a = (a*a)%m;}return (res%m);
-}
-int modInverse(int n){return modbinexp(n, mod-2);}
-int nck(int n,int k){
-    // Distribute n stuff among k things where both n and k are not unique 
-    // if n is unique multiply by (n!) and if k is unique multiply by ((n-k)!)
-    if(n>= N || (k>= N)){
-        cout<<"Increase N\n";return -1;
-    }
-    int p = fac[n];p = (p*modInverse(fac[n-k]))%mod;p = (p*modInverse(fac[k]))%mod;
-    return p;
-}
 
-Nth Fibonacci Number
+    int source;
+    cout << "\nEnter the source node: ";
+    cin >> source;
+    distance[source] = 0;
 
-vector<vector<int>> identityMatrix = {
-    {1, 0}, 
-    {0, 1}
-};
-vector<vector<int>> result = {
-    {0, 0},
-    {0, 0}
-};
+    set<pair<int, int>> s;
 
-void multiply(vector<vector<int>> a, vector<vector<int>> b) {
-    vector<vector<int>> temp(2, vector<int>(2, 0));
-    for(int i = 0; i < 2; i++) {
-        for(int j = 0; j < 2; j++) {
-            for(int k = 0; k < 2; k++) {
-                temp[i][k] = (temp[i][k] + a[i][j] * b[j][k]) % mod;
+    s.insert({0, source});
+
+    while (!s.empty())
+    {
+        auto x = *(s.begin());
+        s.erase(x);
+        for (auto it : graph[x.second])
+        {
+            if (distance[it.first] > distance[x.second] + it.second)
+            {
+                s.erase({distance[it.first], it.first});
+                distance[it.first] = distance[x.second] + it.second;
+                s.insert({distance[it.first], it.first});
             }
         }
     }
-    result = temp;
-}
 
-void matrixExpo(vector<vector<int>> matrix, int n) {
-    if(n == 0) {
-        result = identityMatrix;
-        return;
-    }
-    matrixExpo(matrix, n / 2);
-    multiply(result, result);
-    if(n & 1) {
-        multiply(result, matrix);
-    }
-}
-
-int nthFibonacciNumber(int n, int F0, int F1) { // Now accepts F0 and F1
-    if(n == 0) return F0;
-    if(n == 1) return F1;
-    
-    vector<vector<int>> baseMatrix = {
-        {1, 1},
-        {1, 0}
-    };
-
-    matrixExpo(baseMatrix, n - 1);
-    
-    // Compute Fibonacci using custom F0 and F1
-    return (result[0][0] * F1 + result[0][1] * F0) % mod;
-}
-
-ORDERED_SET
-
-#include <bits/stdc++.h>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/tree_policy.hpp>
-using namespace std;
-#define int long long 
-#define nl "\n"
-#define all(a) a.begin(),a.end()
-#define out(x) cout<<#x<<" - >"<<x<<endl;
-#define forn(a, c) for (int a = 0; a < c; a++) 
-#define forl(a, b, c) for (int a = b; a <= c; a++) 
-#define forr(a, b, c) for (int a = b; a >= c; a--)
-
- 
-typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>, __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update> ordered_set;
-
- 
-ordered_set st;
-int orderkey(int x){ // if x is present in the ordered_set then will return the index of the element
-                     // else returns the index of just greater element in the set
-                       // # zero based indexing return type
-    return st.order_of_key(x);
-}
-int fndorder(int i)
-{                     // returns the element at index i and if is greater of smaller than possible size returns 0
-                        // i must be in zero based indexing style
-    return *st.find_by_order(i);
-}
-void erase(int x)
-{                // erases the element x if present else no change 
-    st.erase(x);
-}
-void solve(){
-    
-}
- 
-signed main(){
-    ios_base::sync_with_stdio(false);cin.tie(NULL);
-    int tt;
-    tt = 1;
-    cin>>tt;
-    while(tt--)
+    for (int i = 1; i <= n; i++)
     {
-        solve();
-    }
-     
-}
-
-PRIMS
-
-// Priyansh Agarwal
-// Check out my Youtube Channel: https://www.youtube.com/c/PriyanshAgarwal
-
-#include<bits/stdc++.h>
-// #include<ext/pb_ds/assoc_container.hpp>
-// #include<ext/pb_ds/tree_policy.hpp>
-
-using namespace std;
-using namespace chrono;
-// using namespace __gnu_pbds;
-
-#define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)
-#define MOD 1000000007
-#define MOD1 998244353
-#define INF 1e18
-#define nline "\n"
-#define pb push_back
-#define ppb pop_back
-#define mp make_pair
-#define ff first
-#define ss second
-#define PI 3.141592653589793238462
-#define set_bits __builtin_popcountll
-#define sz(x) ((int)(x).size())
-#define all(x) (x).begin(), (x).end()
-
-mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
-
-#ifdef Priyansh31dec
-#define debug(x) cerr << #x <<" "; _print(x); cerr << endl;
-#else
-#define debug(x);
-#endif
-
-typedef long long ll;
-typedef unsigned long long ull;
-typedef long double lld;
-// typedef tree<pair<ll, ll>, null_type, less<pair<ll, ll>>, rb_tree_tag, tree_order_statistics_node_update > pbds; // find_by_order, order_of_key
-
-void _print(ll t) {cerr << t;}
-void _print(int t) {cerr << t;}
-void _print(string t) {cerr << t;}
-void _print(char t) {cerr << t;}
-void _print(lld t) {cerr << t;}
-void _print(double t) {cerr << t;}
-void _print(ull t) {cerr << t;}
-
-template <class T, class V> void _print(pair <T, V> p);
-template <class T> void _print(vector <T> v);
-template <class T> void _print(set <T> v);
-template <class T, class V> void _print(map <T, V> v);
-template <class T> void _print(multiset <T> v);
-template <class T, class V> void _print(pair <T, V> p) {cerr << "{"; _print(p.ff); cerr << ","; _print(p.ss); cerr << "}";}
-template <class T> void _print(vector <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
-template <class T> void _print(set <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
-template <class T> void _print(multiset <T> v) {cerr << "[ "; for (T i : v) {_print(i); cerr << " ";} cerr << "]";}
-template <class T, class V> void _print(map <T, V> v) {cerr << "[ "; for (auto i : v) {_print(i); cerr << " ";} cerr << "]";}
-// void _print(pbds v) {cerr << "[ "; for (auto i : v) {_print(i); cerr << " ";} cerr << "]";}
-
-/*---------------------------------------------------------------------------------------------------------------------------*/
-ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
-ll expo(ll a, ll b, ll mod) {ll res = 1; while (b > 0) {if (b & 1)res = (res * a) % mod; a = (a * a) % mod; b = b >> 1;} return res;}
-void extendgcd(ll a, ll b, ll*v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;} //pass an arry of size1 3
-ll mminv(ll a, ll b) {ll arr[3]; extendgcd(a, b, arr); return arr[0];} //for non prime b
-ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
-bool revsort(ll a, ll b) {return a > b;}
-void swap(int &x, int &y) {int temp = x; x = y; y = temp;}
-ll combination(ll n, ll r, ll m, ll *fact, ll *ifact) {ll val1 = fact[n]; ll val2 = ifact[n - r]; ll val3 = ifact[r]; return (((val1 * val2) % m) * val3) % m;}
-void google(int t) {cout << "Case #" << t << ": ";}
-vector<ll> sieve(int n) {int*arr = new int[n + 1](); vector<ll> vect; for (ll i = 2; i <= n; i++)if (arr[i] == 0) {vect.push_back(i); for (ll j = 2 * i; j <= n; j += i)arr[j] = 1;} return vect;}
-ll mod_add(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a + b) % m) + m) % m;}
-ll mod_mul(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a * b) % m) + m) % m;}
-ll mod_sub(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}
-ll mod_div(ll a, ll b, ll m) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m
-ll phin(ll n) {ll number = n; if (n % 2 == 0) {number /= 2; while (n % 2 == 0) n /= 2;} for (ll i = 3; i <= sqrt(n); i += 2) {if (n % i == 0) {while (n % i == 0)n /= i; number = (number / i * (i - 1));}} if (n > 1)number = (number / n * (n - 1)) ; return number;} //O(sqrt(N))
-void precision(int a) {cout << setprecision(a) << fixed;}
-/*--------------------------------------------------------------------------------------------------------------------------*/
-
-
-void solve() {
-	int n, m;
-	cin >> n >> m;
-	vector<pair<int, ll>> *edges = new vector<pair<int, ll>>[n];
-	for (int i = 0; i < m; i++) {
-		int a, b, c;
-		cin >> a >> b >> c;
-		edges[a].pb({b, c});
-		edges[b].pb({a, c});
-	}
-	set<pair<ll, int>> pq;
-	vector<ll> dist(n, INF);
-	dist[0] = 0;
-	vector<bool> visited(n);
-	vector<int> parent(n, -1);
-	pq.insert({0, 0});
-	for (int i = 0; i < n; i++) {
-		pair<ll, int> top = *pq.begin();
-		pq.erase(top);
-		int best = top.ss;
-		visited[best] = true;
-		for (auto i : edges[best]) {
-			if ((!visited[i.ff]) && dist[i.ff] > i.ss) {
-				pq.erase({dist[i.ff], i.ff});
-				dist[i.ff] = i.ss;
-				pq.insert({dist[i.ff], i.ff});
-				parent[i.ff] = best;
-			}
-		}
-	}
-	for (int i = 1; i < n; i++) {
-		if (parent[i] < i) {
-			cout << parent[i] << " " << i << " " << dist[i] << nline;
-		} else {
-			cout << i << " " << parent[i] << " " << dist[i] << nline;
-		}
-	}
-}
-
-int main() {
-#ifdef Priyansh31dec
-	freopen("Error.txt", "w", stderr);
-#endif
-	fastio();
-	auto start1 = high_resolution_clock::now();
-	solve();
-	auto stop1 = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(stop1 - start1);
-#ifdef Priyansh31dec
-	cerr << "Time: " << duration . count() / 1000 << endl;
-#endif
-}
-
-RABIN MILLER
-
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
-
-#define nl "\n"
-#define f first
-#define s second
-const ll mod = 1e9 + 7, inf = 1e18;
-#define all(a) a.begin(), a.end()
-#define forn(i, c) for (int i = 0; i < (c); i++)
-
-mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
-
-// Modular exponentiation with overflow protection using __int128
-ll binpower(ll base, ll e, ll mod) {
-    ll result = 1;
-    base %= mod;
-    while (e) {
-        if (e & 1)
-            result = (__int128)result * base % mod; // Prevent overflow
-        base = (__int128)base * base % mod;
-        e >>= 1;
-    }
-    return result;
-}
-
-// Miller-Rabin composite check
-bool check_composite(ll n, ll a, ll d, int s) {
-    ll x = binpower(a, d, n);
-    if (x == 1 || x == n - 1)
-        return false;
-    for (int r = 1; r < s; r++) {
-        x = (__int128)x * x % n;
-        if (x == n - 1)
-            return false;
-    }
-    return true;
-}
-
-// Miller-Rabin Primality Test (deterministic for n ≤ 10^18)
-bool MillerRabin(ll n) {
-    if (n < 2)
-        return false;
-    if (n < 4)
-        return true;
-    if (n % 2 == 0)
-        return false;
-
-    ll d = n - 1;
-    int s = 0;
-    while (d % 2 == 0) {
-        d /= 2;
-        s++;
-    }
-
-    // Deterministic bases for n ≤ 10^18
-    vector<ll> test_bases = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
-    for (ll a : test_bases) {
-        if (a >= n)
-            break;
-        if (check_composite(n, a, d, s))
-            return false;
-    }
-    return true;
-}
-
-void solve() {
-    // Process 10 numbers per test case
-    forn(i, 10) {
-        ll x;
-        cin >> x;
-        cout << MillerRabin(x) << nl;
-    }
-}
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    auto begin = chrono::high_resolution_clock::now();
-    int t;
-    t = 1;
-    cin >> t;
-    for (int i = 1; i <= t; i++) {
-        // cout << "Case #" << i << ": ";
-        solve();
-    }
-    auto end = chrono::high_resolution_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::nanoseconds>(end - begin);
-    cerr << "Time measured: " << elapsed.count() * 1e-9 << " seconds.\n";
-    return 0;
-}
-
-
-SEGMENT TREE
-
-template<typename Node, typename Update>
-struct SegTree {
-    vector<Node> tree;
-    vector<int> arr; // type may change
-    int n;
-    int s;
-    SegTree(int a_len, vector<int> &a) { // change if type updated
-        arr = a;
-        n = a_len;
-        s = 1;
-        while(s < 2 * n){
-            s = s << 1;
+        if (distance[i] < inf)
+        {
+            cout << "Shortest Distance from node " << source << " to destination node " << i << " : " << distance[i] << endl;
         }
-        tree.resize(s); fill(all(tree), Node());
-        build(0, n - 1, 1);
-    }
-    void build(int start, int end, int index)  // Never change this
-    {
-        if (start == end)   {
-            tree[index] = Node(arr[start]);
-            return;
-        }
-        int mid = (start + end) / 2;
-        build(start, mid, 2 * index);
-        build(mid + 1, end, 2 * index + 1);
-        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
-    }
-    void update(int start, int end, int index, int query_index, Update &u)  // Never Change this
-    {
-        if (start == end) {
-            u.apply(tree[index]);
-            return;
-        }
-        int mid = (start + end) / 2;
-        if (mid >= query_index)
-            update(start, mid, 2 * index, query_index, u);
         else
-            update(mid + 1, end, 2 * index + 1, query_index, u);
-        tree[index].merge(tree[2 * index], tree[2 * index + 1]);
+        {
+            cout << -1 << " ";
+        }
     }
-    Node query(int start, int end, int index, int left, int right) { // Never change this
-        if (start > right || end < left)
-            return Node();
-        if (start >= left && end <= right)
-            return tree[index];
-        int mid = (start + end) / 2;
-        Node l, r, ans;
-        l = query(start, mid, 2 * index, left, right);
-        r = query(mid + 1, end, 2 * index + 1, left, right);
-        ans.merge(l, r);
-        return ans;
-    }
-    void make_update(int index, int val) {  // pass in as many parameters as required
-        Update new_update = Update(val); // may change
-        update(0, n - 1, 1, index, new_update);
-    }
-    Node make_query(int left, int right) {
-        return query(0, n - 1, 1, left, right);
-    }
-};
+}
 
-struct Node1 {
-    int val; // may change
-    Node1() { // Identity element
-        val = 0;    // may change
-    }
-    Node1(int p1) {  // Actual Node
-        val = p1; // may change
-    }
-    void merge(Node1 &l, Node1 &r) { // Merge two child nodes
-        val = l.val ^ r.val;  // may change
-    }
-};
-
-struct Update1 {
-    int val; // may change
-    Update1(int p1) { // Actual Update
-        val = p1; // may change
-    }
-    void apply(Node1 &a) { // apply update to given node
-        a.val = val; // may change
-    }
-};
-// SegTree<Node1,Update1>seg = SegTree<Node1,Update1>(n, v);
-
-TOPOLOGICAL SORT
+CYCLE IN DAG
 
 /* Priyansh Agarwal*/
 #include<bits/stdc++.h>
@@ -1081,38 +1083,74 @@ typedef long double lld;
 /*---------------------------------------------------------------------------------------------------------------------------*/
 ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
 ll expo(ll a, ll b, ll mod) {ll res = 1; while (b > 0) {if (b & 1)res = (res * a) % mod; a = (a * a) % mod; b = b >> 1;} return res;}
-void extendgcd(ll a, ll b, ll*v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;} //pass an arry of size 3
-ll mminv(ll a, ll b) {ll arr[3]; extendgcd(a, b, arr); return arr[0];} //for non prime b
+
+// MODIFICATION: Changed `ll* v` to `vector<ll>& v`.
+// The vector `v` must be passed in with at least 3 elements.
+void extendgcd(ll a, ll b, vector<ll>& v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;}
+
+// MODIFICATION: Changed `ll arr[3]` to `vector<ll> arr(3)`.
+ll mminv(ll a, ll b) {vector<ll> arr(3); extendgcd(a, b, arr); return arr[0];} //for non prime b
 ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
 bool revsort(ll a, ll b) {return a > b;}
 void swap(int &x, int &y) {int temp = x; x = y; y = temp;}
-ll combination(ll n, ll r, ll m, ll* fact) {ll val1 = fact[n]; ll val2 = mminvprime(fact[r], m); ll val3 = mminvprime(fact[n - r], m); return ((val1 * val2) % m * val3) % m;}
+
+// MODIFICATION: Changed `ll* fact` to `const vector<ll>& fact` (pass by const-reference).
+ll combination(ll n, ll r, ll m, const vector<ll>& fact) {ll val1 = fact[n]; ll val2 = mminvprime(fact[r], m); ll val3 = mminvprime(fact[n - r], m); return ((val1 * val2) % m * val3) % m;}
 void google(int t) {cout << "Case #" << t << ": ";}
 /*--------------------------------------------------------------------------------------------------------------------------*/
-void dfs(int start, vector<int>*edges, bool *visited, vector<int>& ans)
+
+// MODIFICATION:
+// 1. Changed `vector<int>* edges` to `const vector<vector<int>>& edges` (const-reference).
+// 2. Changed `bool* w/g/b` to `vector<bool>& w/g/b` (references).
+bool dfs(int start, const vector<vector<int>>& edges, vector<bool>& w, vector<bool>& g, vector<bool>& b)
 {
-	visited[start] = true;
+	w[start] = false;
+	g[start] = true;
 	for (auto i : edges[start])
 	{
-		if (visited[i])
-			continue;
-		dfs(i, edges, visited, ans);
+		if (g[i])
+			return false; // Cycle detected
+		if (w[i])
+		{
+			bool ans = dfs(i, edges, w, g, b);
+			if (!ans)
+				return false; // Propagate cycle detection
+		}
 	}
-	ans.pb(start);
+	g[start] = false;
+	b[start] = true;
+	return true; // No cycle found from this path
 }
-vector<int> topo_sort(int n, vector<int>*edges)
+
+// MODIFICATION:
+// 1. Changed signature to take `const vector<vector<int>>& edges`.
+// 2. Removed `n` parameter; we can get it from `edges.size()`.
+// 3. Changed all `new bool[n]()` to `vector<bool>`.
+// 4. This automatically fixes all memory leaks.
+bool check_cycle(const vector<vector<int>>& edges)
 {
-	vector<int> v1;
-	bool *visited = new bool[n]();
+	int n = edges.size(); // Get 'n' from the vector itself
+
+	// Create vectors for 3-color DFS (for cycle detection in directed graphs)
+	vector<bool> white(n, true);  // 'true' means "not yet visited"
+	vector<bool> grey(n, false);  // 'true' means "visiting" (in current recursion stack)
+	vector<bool> black(n, false); // 'true' means "visited and finished"
+
+	// Note: The loop `for (int i = 0; i < n; i++) white[i] = true;` from
+	// the original code is no longer needed, as we can initialize `white` correctly.
+
 	for (int i = 0; i < n; i++)
 	{
-		if (visited[i])
-			continue;
-		dfs(i, edges, visited, v1);
+		if (white[i]) // If not yet visited
+		{
+			bool ans = dfs(i, edges, white, grey, black);
+			if (!ans)
+				return true; // Cycle was found
+		}
 	}
-	reverse(v1.begin(), v1.end());
-	return v1;
+	return false; // No cycles found in the entire graph
 }
+
 int main()
 {
 	fastio();
@@ -1123,18 +1161,104 @@ int main()
 #endif
 	int n, m;
 	cin >> n >> m;
-	vector<int>*edges = new vector<int>[n];
+
+	// MODIFICATION:
+	// Changed `vector<int>* edges = new vector<int>[n]` (C-style array of vectors)
+	// to `vector<vector<int>> edges(n)` (a 2D vector).
+	// This also fixes the memory leak.
+	vector<vector<int>> edges(n);
+
 	for (int i = 0; i < m; i++)
 	{
 		int u, v;
 		cin >> u >> v;
 		u--;
 		v--;
-		edges[u].pb(v);
+		edges[u].pb(v); // This syntax remains the same
 	}
-	vector<int> v1 = topo_sort(n, edges);
-	for (int i = 0; i < n; i++)
-		cout << v1[i] + 1 << " ";
-	cout << endl;
+
+	// MODIFICATION: Pass `edges` directly. No `n` needed.
+	bool check = check_cycle(edges);
+
+	if (check)
+		cout << "IMPOSSIBLE" << endl;
+	else
+		cout << "POSSIBLE" << endl; // Added this for clarity
 	return 0;
+}
+
+CUSTOM HASH
+
+struct custom_hash {
+    static uint64_t splitmix64(uint64_t x) {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+BELLMAN FORD
+
+		// for single source root with negative weight edges
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long 
+#define  nl "\n"
+const int mod = 1e9+7;
+#define forn(a, c) for (int a = 0; a < c; a++) 
+const int N = 2505;
+ 
+ 
+signed main()
+{
+    int parent[N];
+    std::vector<array<int,3>> v;
+    int n, m;
+    cin>>n>>m;
+    forn(i, m){
+        int a, b, c;
+        cin>>a>>b>>c;--a, --b;
+        v.push_back({a,b , c});
+    }
+    vector<int>d(N, 1e18);
+    d[0] = 0;
+    int x = -1;
+    forn(i, n){
+        x = -1;
+        for(auto &y:v){
+            if(d[y[0]] + y[2] < d[y[1]]){
+                parent[y[1]] = y[0];
+                d[y[1]] = d[y[0]] + y[2];
+                x =  y[1] ;
+            }
+        }
+    }
+    
+ 
+    if(x == -1){
+        cout<<"NO\n";
+    }
+    else{
+        cout<<"YES\n";
+        for (int i = 0; i < n; ++i) {
+            x = parent[x];  
+        } 
+        
+        vector<int> cycle;
+        for (int v = x;; v = parent[v]) {
+            cycle.push_back(v);
+            if (v == x && cycle.size() > 1)
+                break;
+        }
+        reverse(cycle.begin(), cycle.end());
+        for(auto &x:cycle)cout<<x+1<<" ";
+ 
+    }
 }
