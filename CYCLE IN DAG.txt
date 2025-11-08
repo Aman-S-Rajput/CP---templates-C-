@@ -27,51 +27,74 @@ typedef long double lld;
 /*---------------------------------------------------------------------------------------------------------------------------*/
 ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
 ll expo(ll a, ll b, ll mod) {ll res = 1; while (b > 0) {if (b & 1)res = (res * a) % mod; a = (a * a) % mod; b = b >> 1;} return res;}
-void extendgcd(ll a, ll b, ll*v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;} //pass an arry of size 3
-ll mminv(ll a, ll b) {ll arr[3]; extendgcd(a, b, arr); return arr[0];} //for non prime b
+
+// MODIFICATION: Changed `ll* v` to `vector<ll>& v`.
+// The vector `v` must be passed in with at least 3 elements.
+void extendgcd(ll a, ll b, vector<ll>& v) {if (b == 0) {v[0] = 1; v[1] = 0; v[2] = a; return ;} extendgcd(b, a % b, v); ll x = v[1]; v[1] = v[0] - v[1] * (a / b); v[0] = x; return;}
+
+// MODIFICATION: Changed `ll arr[3]` to `vector<ll> arr(3)`.
+ll mminv(ll a, ll b) {vector<ll> arr(3); extendgcd(a, b, arr); return arr[0];} //for non prime b
 ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
 bool revsort(ll a, ll b) {return a > b;}
 void swap(int &x, int &y) {int temp = x; x = y; y = temp;}
-ll combination(ll n, ll r, ll m, ll* fact) {ll val1 = fact[n]; ll val2 = mminvprime(fact[r], m); ll val3 = mminvprime(fact[n - r], m); return ((val1 * val2) % m * val3) % m;}
+
+// MODIFICATION: Changed `ll* fact` to `const vector<ll>& fact` (pass by const-reference).
+ll combination(ll n, ll r, ll m, const vector<ll>& fact) {ll val1 = fact[n]; ll val2 = mminvprime(fact[r], m); ll val3 = mminvprime(fact[n - r], m); return ((val1 * val2) % m * val3) % m;}
 void google(int t) {cout << "Case #" << t << ": ";}
 /*--------------------------------------------------------------------------------------------------------------------------*/
-bool dfs(int start, vector<int>*edges, bool *w, bool *g, bool *b)
+
+// MODIFICATION:
+// 1. Changed `vector<int>* edges` to `const vector<vector<int>>& edges` (const-reference).
+// 2. Changed `bool* w/g/b` to `vector<bool>& w/g/b` (references).
+bool dfs(int start, const vector<vector<int>>& edges, vector<bool>& w, vector<bool>& g, vector<bool>& b)
 {
 	w[start] = false;
 	g[start] = true;
 	for (auto i : edges[start])
 	{
 		if (g[i])
-			return false;
+			return false; // Cycle detected
 		if (w[i])
 		{
 			bool ans = dfs(i, edges, w, g, b);
 			if (!ans)
-				return false;
+				return false; // Propagate cycle detection
 		}
 	}
 	g[start] = false;
 	b[start] = true;
-	return true;
+	return true; // No cycle found from this path
 }
-bool check_cycle(int n, vector<int>*edges)
+
+// MODIFICATION:
+// 1. Changed signature to take `const vector<vector<int>>& edges`.
+// 2. Removed `n` parameter; we can get it from `edges.size()`.
+// 3. Changed all `new bool[n]()` to `vector<bool>`.
+// 4. This automatically fixes all memory leaks.
+bool check_cycle(const vector<vector<int>>& edges)
 {
-	bool *white = new bool[n]();
-	bool *grey = new bool[n]();
-	bool *black = new bool[n]();
-	for (int i = 0; i < n; i++)
-		white[i] = true;
+	int n = edges.size(); // Get 'n' from the vector itself
+
+	// Create vectors for 3-color DFS (for cycle detection in directed graphs)
+	vector<bool> white(n, true);  // 'true' means "not yet visited"
+	vector<bool> grey(n, false);  // 'true' means "visiting" (in current recursion stack)
+	vector<bool> black(n, false); // 'true' means "visited and finished"
+
+	// Note: The loop `for (int i = 0; i < n; i++) white[i] = true;` from
+	// the original code is no longer needed, as we can initialize `white` correctly.
+
 	for (int i = 0; i < n; i++)
 	{
-		if (white[i])
+		if (white[i]) // If not yet visited
 		{
 			bool ans = dfs(i, edges, white, grey, black);
 			if (!ans)
-				return true;
+				return true; // Cycle was found
 		}
 	}
-	return false;
+	return false; // No cycles found in the entire graph
 }
+
 int main()
 {
 	fastio();
@@ -82,17 +105,28 @@ int main()
 #endif
 	int n, m;
 	cin >> n >> m;
-	vector<int>*edges = new vector<int>[n];
+
+	// MODIFICATION:
+	// Changed `vector<int>* edges = new vector<int>[n]` (C-style array of vectors)
+	// to `vector<vector<int>> edges(n)` (a 2D vector).
+	// This also fixes the memory leak.
+	vector<vector<int>> edges(n);
+
 	for (int i = 0; i < m; i++)
 	{
 		int u, v;
 		cin >> u >> v;
 		u--;
 		v--;
-		edges[u].pb(v);
+		edges[u].pb(v); // This syntax remains the same
 	}
-	bool check = check_cycle(n, edges);
+
+	// MODIFICATION: Pass `edges` directly. No `n` needed.
+	bool check = check_cycle(edges);
+
 	if (check)
 		cout << "IMPOSSIBLE" << endl;
+	else
+		cout << "POSSIBLE" << endl; // Added this for clarity
 	return 0;
 }
