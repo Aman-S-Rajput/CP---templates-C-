@@ -1,3 +1,5 @@
+#define ll long long
+#define all(x) x.begin(),x.end()
 template<typename Node, typename Update>
 struct SegTree {
     vector<Node> tree;
