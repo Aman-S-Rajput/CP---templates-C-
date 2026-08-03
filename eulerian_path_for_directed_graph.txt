@@ -1,0 +1,71 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+*/
+
+/*
+
+thought process
+
+
+
+*/
+int n, m;
+const int N =2e5 + 5;
+std::vector<stack<int>> v(N);
+vector<int>ans;
+void dfs(int node)
+{
+    while(!v[node].empty())
+    {
+        int son = v[node].top();
+        v[node].pop();
+        dfs(son);
+    }
+    ans.push_back(node);
+}
+void solve()
+{
+    cin>>n>>m;
+    vector<int>in(n), out(n);
+    for(int i = 0; i < m;i++)
+    {
+        int a, b;
+        cin>>a>>b;
+        --a, --b;
+        v[a].push(b);
+        in[b]++;
+        out[a]++;
+    }
+    if(out[0] != in[0] + 1 || out[n - 1] != in[n - 1] -1){
+        cout<<"IMPOSSIBLE\n";return;
+    }
+    for(int i = 1;i< n-1;i++)
+    {
+        if(in[i] != out[i]){
+            cout<<"IMPOSSIBLE\n";return;
+        }
+    }
+    dfs(0);
+    if(ans.size() != m + 1){
+        cout<<"IMPOSSIBLE";
+    }
+    else{
+        reverse(ans.begin(),ans.end());
+        for(auto &x : ans)cout<<x + 1<<' ';cout<<'\n';
+    }
+
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
