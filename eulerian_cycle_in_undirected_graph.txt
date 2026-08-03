@@ -1,0 +1,62 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+*/
+
+/*
+
+thought process
+
+
+
+*/
+int n, m;
+const int N =1e5+ 5;
+std::vector<stack<pair<int,int>>> adj(N);
+vector<int>seen(2*N), ans;
+void dfs(int node){
+    while(!adj[node].empty()){
+        auto [son, idx] = adj[node].top();
+        adj[node].pop();
+        if(seen[idx])continue;
+        seen[idx] = 1;
+        dfs(son);
+    }
+    ans.push_back(node);
+}
+void solve()
+{
+    cin>>n>>m;
+    for(int i = 0; i< m;i++){
+        int a, b;
+        cin>>a>>b;
+        adj[a].push({b,i});
+        adj[b].push({a,i});
+    }
+    for(int i = 1;i<= n;i++){
+        if(adj[i].size() % 2){
+            cout<<"IMPOSSIBLE";return;
+        }
+    }
+    dfs(1);
+    if(ans.size() != m + 1){
+        cout<<"IMPOSSIBLE";
+    }
+    else{
+        for(auto &x: ans)cout<<x<<' ';
+    }
+
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
