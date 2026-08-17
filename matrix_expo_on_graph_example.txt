@@ -1,0 +1,79 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+*/
+
+/*
+
+thought process
+n, m,k
+count of paths consisting of k steps.
+
+
+
+*/
+const int mod = 1e9 + 7;
+struct Matrix{
+    int r, c;
+    vector<vector<int>> mat;
+    Matrix(int row, int col){
+        r = row;
+        c = col;
+        mat.resize(r, vector<int>(c));
+    }
+    Matrix operator*(const Matrix& other) const{
+        Matrix result(r, other.c);
+        for(int i = 0;i < r;i++){
+            for(int j = 0;j < other.c;j++){
+                for(int k = 0;k < c;k++){
+                    result.mat[i][j] += mat[i][k] * other.mat[k][j];
+                    result.mat[i][j]%= mod;
+                }
+            }
+        }
+        return result;
+    }
+};
+
+void solve()
+{
+    int n;
+    cin>>n;
+    int m ,k;
+    cin>>m>>k;
+    Matrix a(n, n);
+    Matrix res(1, n);
+    for(int i= 0; i < n;i++)res.mat[0][i] = 1;
+    for(int i = 0;i < m;i++){
+        int x, y;
+        cin>>x>>y;
+        --x, --y;
+        // res[y] += res[x]
+        a.mat[y][x] = 1;
+    }
+
+    while(k){
+        if(k & 1)res = res * a;
+        k>>= 1;
+        a = (a * a);
+    }
+    int ans = 0;
+    for(int i= 0;i < n;i++){
+        ans += res.mat[0][i];
+        ans %= mod;
+    }
+    cout<<ans;
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
