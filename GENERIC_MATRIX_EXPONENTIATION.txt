@@ -1,0 +1,81 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+*/
+
+/*
+
+thought process
+
+
+
+*/
+const int mod = 1e9 + 7;
+struct Matrix{
+    int r, c;
+    vector<vector<int>> mat;
+    Matrix(int row, int col){
+        r = row;
+        c = col;
+        mat.resize(r, vector<int>(c));
+    }
+    Matrix operator*(const Matrix& other) const{
+        Matrix result(r, other.c);
+        for(int i = 0;i < r;i++){
+            for(int j = 0;j < other.c;j++){
+                for(int k = 0;k < c;k++){
+                    result.mat[i][j] += mat[i][k] * other.mat[k][j];
+                    result.mat[i][j]%= mod;
+                }
+            }
+        }
+        return result;
+    }
+};
+
+void solve()
+{
+    int n;
+    cin>>n;
+    // int f0 = 0, f1 = 1;  makes the base matrix
+    // for(int i = 0;i < n;i++){
+    //     int s = 1 * f0 + 1 * f1; the computations to perform
+    //     f0 = 0 *f0 + 1 *  f1; take what has to be inside from the coefficients
+    //     f1 = s% mod;
+    // }
+    // cout<<f0;
+    /*
+        the base will be formed by initial values
+        then see how the values are inter-related using these computations.
+        put them as they are into a matrix for further matrix exponentiation
+        for more examples ->https://codeforces.com/gym/102644
+    */
+    Matrix a(2, 2);
+    a.mat = {
+        {0,1},
+        {1,1}
+    };
+    Matrix res(1, 2);
+    res.mat = {
+        {0, 1}
+    };
+    while(n){
+        if(n & 1)res = res * a;
+        n>>= 1;
+        a = (a * a);
+    }
+    cout<<res.mat[0][0];
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
