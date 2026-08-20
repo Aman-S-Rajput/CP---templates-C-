@@ -1,79 +1,100 @@
 #include<bits/stdc++.h>
 using namespace std;
 #define int long long
-/*
-ROA
-1.pivot
-2.nec vs suf
-3.clear/deterministic
-*/
 
-/*
+const int MOD = 1e9 + 7;
+const int INF = 4e18; // Useful if solving Min/Max path problems
 
-thought process
-n, m,k
-count of paths consisting of k steps.
-
-
-
-*/
-const int mod = 1e9 + 7;
-struct Matrix{
-    int r, c;
+struct Matrix {
+    int n;
     vector<vector<int>> mat;
-    Matrix(int row, int col){
-        r = row;
-        c = col;
-        mat.resize(r, vector<int>(c));
+    
+    // Constructor initializes an n x n matrix with 0s
+    // NOTE: Change default initialization to INF if doing Min-Plus multiplication
+    Matrix(int size) {
+        n = size;
+        mat.assign(n, vector<int>(n, 0));
     }
-    Matrix operator*(const Matrix& other) const{
-        Matrix result(r, other.c);
-        for(int i = 0;i < r;i++){
-            for(int j = 0;j < other.c;j++){
-                for(int k = 0;k < c;k++){
-                    result.mat[i][j] += mat[i][k] * other.mat[k][j];
-                    result.mat[i][j]%= mod;
+
+    // Turns this matrix into the Identity Matrix
+    void make_identity() {
+        for(int i = 0; i < n; i++) {
+            mat[i][i] = 1; // 1 for counting, 0 for Min/Max path problems
+        }
+    }
+
+    // Overload the multiplication operator
+    Matrix operator*(const Matrix& other) const {
+        Matrix res(n);
+        
+        // NOTE: If doing Min/Max problems, initialize 'res' with INF or -INF instead of 0
+        // res.mat.assign(n, vector<int>(n, INF));
+        
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < n; j++) {
+                for(int k = 0; k < n; k++) {
+                    
+                    // --- SCENARIO 1: COUNTING PATHS (Standard Modulo Math) ---
+                    res.mat[i][j] += (mat[i][k] * other.mat[k][j]) % MOD;
+                    res.mat[i][j] %= MOD;
+                    
+                    // --- SCENARIO 2: MIN-WEIGHT PATHS (Min-Plus Math) ---
+                    // if (mat[i][k] != INF && other.mat[k][j] != INF) {
+                    //     res.mat[i][j] = min(res.mat[i][j], mat[i][k] + other.mat[k][j]);
+                    // }
+                    
                 }
             }
         }
-        return result;
+        return res;
     }
 };
 
-void solve()
-{
-    int n;
-    cin>>n;
-    int m ,k;
-    cin>>m>>k;
-    Matrix a(n, n);
-    Matrix res(1, n);
-    for(int i= 0; i < n;i++)res.mat[0][i] = 1;
-    for(int i = 0;i < m;i++){
-        int x, y;
-        cin>>x>>y;
-        --x, --y;
-        // res[y] += res[x]
-        a.mat[y][x] = 1;
+// Binary Exponentiation for Matrices
+Matrix power(Matrix a, int k) {
+    Matrix res(a.n);
+    res.make_identity(); // Starts as identity (A^0)
+    
+    while(k > 0) {
+        if(k & 1) res = res * a;
+        a = a * a;
+        k >>= 1;
     }
-
-    while(k){
-        if(k & 1)res = res * a;
-        k>>= 1;
-        a = (a * a);
-    }
-    int ans = 0;
-    for(int i= 0;i < n;i++){
-        ans += res.mat[0][i];
-        ans %= mod;
-    }
-    cout<<ans;
+    return res;
 }
 
-signed main()
-{
-    ios_base::sync_with_stdio(false), cin.tie(NULL);
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    
+    // 1. Create the base adjacency matrix
+    Matrix a(n);
+    
+    // 2. Read the edges
+    for(int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        --u; --v; // Convert to 0-based indexing
+        
+        // Add edge logic (Change based on problem)
+        a.mat[u][v] += 1; // Unweighted directed graph (Counting ways)
+        
+        // For Min-Weight Paths: a.mat[u][v] = weight;
+        // For Undirected graphs: also do a.mat[v][u] += 1;
+    }
+    
+    // 3. Compute A^k
+    Matrix res = power(a, k);
+    
+    // 4. Output the result
+    // res.mat[0][n-1] contains the answer for paths from vertex 1 to vertex n
+    cout << res.mat[0][n - 1] << "\n";
+}
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
     int t = 1;
-    // cin>>t;
-    while(t--)solve();
+    // cin >> t;
+    while(t--) solve();
 }
