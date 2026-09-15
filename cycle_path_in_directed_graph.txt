@@ -1,0 +1,93 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+#define  nl "\n"
+#define f first
+#define s second
+const int mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(),a.end()
+#define forn(a, c) for (int (a) = 0; (a) < (c); (a)++)
+#define cin(v) for(auto &i:v){cin>>i;}
+#define cout(v) for(auto &i:v){cout<<i<<" ";}cout<<nl;
+#define dbg(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); pri(_it, args); cout<<nl;}
+void pri(istream_iterator<string> it) {}
+template<typename T, typename... Args>
+void pri(istream_iterator<string> it, T a, Args... args) {cout << *it << "  " << a << nl;pri(++it, args...);}
+string dtobin(int n,int k = 0){string res = "";while(n>0 || k>0){k--;if(n&1){res += "1";}else{res += "0";}n>>= 1;}reverse(res.begin(),res.end());return res;}
+int binexp(int a,int b){if(b==0){return 1;}int res = 1;while(b){if(b&1){res*= a;}b>>=1; a *= a;}return res;}
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+*/
+
+/*
+thought process
+starts and ends at the same place ok
+so basically i have to find a cylce simple
+find cylce in directed graph
+
+
+
+*/
+const int N = 1e5 + 5;
+std::vector<int> adj[N], par(N), col(N);
+int cs = -1, ce = -1;
+bool dfs(int v)
+{
+    col[v] = 1;
+    for(int u : adj[v])
+    {
+        if(col[u] == 0){
+            par[u] = v;
+            if(dfs(u))return 1;
+        }
+        else if(col[u] == 1){
+            ce = v, cs =u;
+            return 1;
+        }
+    }
+    col[v] = 2;
+    return 0;
+
+}
+void solve()
+{
+    int n, m;
+    cin>>n>>m;
+    forn(i,m)
+    {
+        int a, b;
+        cin>>a>>b;
+        --a,--b;
+        adj[a].push_back(b);
+    }
+    forn(i, n)
+    {
+        if(col[i] == 0 and dfs(i))
+            break;
+    }
+    if(ce == -1){
+        cout<<"IMPOSSIBLE\n";
+    }
+    else{
+        vector<int>cycle;
+        cycle.push_back(cs);
+        for(int v = ce; v!= cs ; v = par[v])
+            cycle.push_back(v);
+        cycle.push_back(cs);
+        reverse(all(cycle));
+        cout<<cycle.size()<<"\n";
+        for(auto &x: cycle)cout<<x + 1<<' ';
+    }
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
