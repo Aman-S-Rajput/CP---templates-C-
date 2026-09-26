@@ -1,0 +1,43 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAXN = 200005; // Maximum number of nodes
+const int LOG = 20;      // 2^20 is roughly 10^6, enough for most CP problems
+
+vector<int> adj[MAXN];
+int up[MAXN][LOG];
+
+// 1. Build the table using DFS
+void dfs(int u, int p) {
+    up[u][0] = p; // The 2^0 (1st) ancestor is the direct parent
+    
+    // Compute 2^j-th ancestor for node u
+    for (int j = 1; j < LOG; j++) {
+        if (up[u][j - 1] != -1) {
+            up[u][j] = up[up[u][j - 1]][j - 1];
+        } else {
+            up[u][j] = -1;
+        }
+    }
+
+    // Continue DFS
+    for (int v : adj[u]) {
+        if (v != p) {
+            dfs(v, u);
+        }
+    }
+}
+
+// 2. Get the K-th ancestor in O(log K)
+int get_ancestor(int u, int k) {
+    for (int j = 0; j < LOG; j++) {
+        // Check if the j-th bit of k is set (i.e., we need a jump of size 2^j)
+        if (k & (1 << j)) {
+            if (u == -1) return -1; // We jumped out of the tree
+            u = up[u][j];
+        }
+    }
+    return u;
+}
