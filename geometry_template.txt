@@ -1,0 +1,150 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+#define  nl "\n"
+#define f first
+#define s second
+const int mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(),a.end()
+#define forn(a, c) for (int (a) = 0; (a) < (c); (a)++)
+#define cin(v) for(auto &i:v){cin>>i;}
+#define cout(v) for(auto &i:v){cout<<i<<" ";}cout<<nl;
+#define dbg(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); pri(_it, args); cout<<nl;}
+void pri(istream_iterator<string> it) {}
+template<typename T, typename... Args>
+void pri(istream_iterator<string> it, T a, Args... args) {cout << *it << "  " << a << nl;pri(++it, args...);}
+string dtobin(int n,int k = 0){string res = "";while(n>0 || k>0){k--;if(n&1){res += "1";}else{res += "0";}n>>= 1;}reverse(res.begin(),res.end());return res;}
+int binexp(int a,int b){if(b==0){return 1;}int res = 1;while(b){if(b&1){res*= a;}b>>=1; a *= a;}return res;}
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+4. think twice code once
+*/
+
+struct P
+{
+    int x, y;
+    void read() { cin >> x >> y; }
+
+    P operator -(const P& b) const { return P{x - b.x , y - b.y}; }
+    void operator -= (const P& b) { x -= b.x; y -= b.y; }
+    void operator += (const P& b) { x += b.x; y += b.y; }
+
+    bool operator < (const P& b) const {
+        return make_pair(x,y) < make_pair(b.x,b.y);
+    }
+
+    int operator * (const P& b) const { // Cross product
+        return x * b.y - y * b.x;
+    }
+
+    int areaDob(const P&b, const P&c) const { // returns twice the area of triangle without taking absolute
+        return x*(b.y - c.y) + b.x * (c.y - y) + c.x * (y - b.y);
+    }
+
+    bool pointOnSeg(const P& a, const P& b) const { // true when the point calling it is exclsively on the segment
+        int cross_val = (b - a) * (*this - a);
+        if(cross_val != 0) return false;
+        return x >= min(a.x, b.x) && x <= max(a.x, b.x) &&
+               y >= min(a.y, b.y) && y <= max(a.y, b.y);
+    }
+
+    int triangle(const P&b, const P&c) const {
+        /*
+            neg sign -> c is right of the directed line a to b
+            pos -> c is left of
+            zero -> collinear
+        */
+        return (*this - b) * (*this - c);
+    }
+};
+
+int orient(P a, P b, P c) {
+    int v = (b - a) * (c - a);
+    if (v < 0) return -1; // clockwise
+    if (v > 0) return 1;  // counter-clockwise
+    return 0;             // collinear
+}
+
+bool intersection(const P& a, const P& b, const P& c, const P& d) {
+    if(a.pointOnSeg(c,d) || b.pointOnSeg(c,d) || c.pointOnSeg(a,b) || d.pointOnSeg(a,b)) return true;
+    return orient(a,b,c) * orient(a,b,d) < 0 && orient(c,d,a) * orient(c,d,b) < 0;
+}
+
+int boundaryLatticePoints(const vector<P>& v) {
+    int ans = 0, n = v.size();
+    for(int i = 0; i < n; i++) {
+        P helper = v[i] - v[(i + 1)%n];
+        int g = __gcd(abs(helper.x), abs(helper.y));
+        ans += g;
+    }
+    return ans;
+}
+
+int areaDobPolygon(const vector<P>& v) {// returns doulbe the area of polygon(not required to be convex polygon)
+    int n = v.size(), ans = 0;
+    for(int i = 2; i < n; i++) ans += v[0].areaDob(v[i-1], v[i]);
+    return abs(ans);
+}
+
+int InsideLatticePoints(const vector<P>& v) {
+    /*
+        pick's theorem
+        A = i +(b / 2) - 1
+        i -> interior lattice points
+        A -> area
+        b -> boundary lattice points
+    */
+    int area = areaDobPolygon(v);
+    int boundary = boundaryLatticePoints(v);
+    return (area - boundary + 2) / 2;
+}
+
+bool comp(const P&a, const P&b) {
+    return a.y < b.y;
+}
+
+long long square(int a) {
+    return a * a;
+}
+
+long long minEuc(vector<P>& v) {
+    // Remember to sort(v.begin(), v.end()) before calling this!
+    int n = v.size();
+    if(n <= 1) return LLONG_MAX;
+    vector<P> L(v.begin(), v.begin() + n / 2);
+    vector<P> R(v.begin() + n / 2, v.end());
+
+    long long d1 = minEuc(L), d2 = minEuc(R);
+    long long d = min(d1, d2);
+    int xdiv = L.back().x;
+
+    vector<P> stripes;
+    for(auto &A : L) if(square(A.x - xdiv) < d) stripes.push_back(A);
+    for(auto &A : R) if(square(A.x - xdiv) < d) stripes.push_back(A);
+
+    sort(stripes.begin(), stripes.end(), comp);
+    int sz = stripes.size();
+    for(int i = 0; i < sz; i++) {
+        for(int j = i + 1; j < sz && square(stripes[i].y - stripes[j].y) < d; j++) {
+            d = min(d, square(stripes[i].y - stripes[j].y) + square(stripes[i].x - stripes[j].x));
+        }
+    }
+    return d;
+}
+
+void solve()
+{
+
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--) solve();
+}
