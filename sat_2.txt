@@ -1,0 +1,67 @@
+#include<bits/stdc++.h>
+using namespace std;
+const int N = 2e5 + 5;
+// solution of  giant pizza
+vector<int>a1[N],a2[N];// one is normal graph and other is transposed graph
+void dfs(int u,vector<int>&vis,stack<int>&st)
+{
+    vis[u] = 1;
+    for(auto & x: a1[u])
+    {
+        if(!vis[x])dfs(x, vis, st);
+    }
+    st.push(u);
+}
+void dfs1(int u,int cnt, vector<int>&sol)
+{
+    sol[u] = cnt;
+    for(auto &x: a2[u])
+    {
+        if(!sol[x])dfs1(x,cnt,sol);
+    }
+}
+int main()
+{
+    int n, m;
+    cin>>m>>n;
+    for(int i = 0;i < m;i++){
+        char a, b;
+        int x, y;
+        cin>>a>>x>>b>>y;
+        int ox = x + n, oy = y + n;
+        if(a == '-')swap(x, ox);
+        if(b == '-')swap(y, oy);
+        a1[ox].push_back(y);
+        a1[oy].push_back(x);
+        a2[y].push_back(ox);
+        a2[x].push_back(oy);
+    }
+    n *= 2;
+    stack<int>st;
+    vector<int>vis(n + 1);
+    for(int i = 1;i<= n;i++)if(!vis[i])dfs(i, vis,st);
+    int cnt = 1;
+    for(int i = 1;i<= n;i++)vis[i] = 0;
+    while(st.size())
+    {
+        int tp = st.top();
+        if(vis[tp] == 0){
+            dfs1(tp,cnt,vis);
+            cnt++;
+        }
+        st.pop();
+    }
+    // now think of this vis as timeline of consequences
+    // low number that it is in the starting
+    // hight number tells it happened later
+    // so higher number gives the safer side
+   for(int i = 1;i<= n/ 2;i++){
+        if(vis[i] == vis[i + n / 2]){
+            cout<<"IMPOSSIBLE\n";return 0;
+        }
+   }
+   for(int i =1 ;i<= n/ 2;i++){
+        if(vis[i] > vis[i + n / 2])cout<<"+ ";// choosing smaller bcoz there might still be a connecting implication chain so we choose the sink and not the source
+        else cout<<"- ";
+   }
+}
