@@ -1,0 +1,93 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+#define  nl "\n"
+#define f first
+#define s second
+const int mod = 1e9 + 7, inf = 1e18;
+#define all(a) a.begin(),a.end()
+#define forn(a, c) for (int (a) = 0; (a) < (c); (a)++)
+#define cin(v) for(auto &i:v){cin>>i;}
+#define cout(v) for(auto &i:v){cout<<i<<" ";}cout<<nl;
+#define dbg(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); pri(_it, args); cout<<nl;}
+void pri(istream_iterator<string> it) {}
+template<typename T, typename... Args>
+void pri(istream_iterator<string> it, T a, Args... args) {cout << *it << "  " << a << nl;pri(++it, args...);}
+string dtobin(int n,int k = 0){string res = "";while(n>0 || k>0){k--;if(n&1){res += "1";}else{res += "0";}n>>= 1;}reverse(res.begin(),res.end());return res;}
+int binexp(int a,int b){if(b==0){return 1;}int res = 1;while(b){if(b&1){res*= a;}b>>=1; a *= a;}return res;}
+mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
+/*
+ROA
+1.pivot
+2.nec vs suf
+3.clear/deterministic
+4. think twice code once
+*/
+
+/*
+thought process
+
+
+
+*/
+const int N = 505;
+std::vector<int> adj[N], parent(N,-1);
+vector<vector<int>>capacity(N, vector<int>(N));
+int n, m;
+bool reachable(){
+    queue<int>q;
+    q.push(1);
+    while(!q.empty()){
+        int node = q.front();
+        q.pop();
+        for(auto &son : adj[node]){
+            int cap = capacity[node][son];
+            if(cap <= 0 || parent[son]!= -1)continue;
+            parent[son] = node;
+            q.push(son);
+        }
+    }
+    return parent[n] != -1;
+}
+
+int max_flow(){
+    int maxF = 0;
+    parent[1] = 1;// slightly optimizes depending on the graph
+    while(reachable()){
+        int node = n,curr_flow = LLONG_MAX;
+        while(node != 1){
+            curr_flow = min(curr_flow, capacity[parent[node]][node]);
+            node = parent[node];
+        }
+        node = n;
+        while(node != 1){
+            capacity[parent[node]][node] -= curr_flow;
+            capacity[node][parent[node]] += curr_flow; /// to block backedges(allows algo to undo flow sent in wrong direction)
+            node = parent[node];
+        }
+        maxF += curr_flow;
+        fill(parent.begin(),parent.begin() + n + 1, -1);
+    }
+    return maxF;
+}
+
+void solve()
+{
+    cin>>n>>m;
+    for(int i = 0;i < m;i++){
+        int a, b, c;
+        cin>>a>>b>>c;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+        capacity[a][b] += c;
+    }
+    cout<<max_flow();
+}
+
+signed main()
+{
+    ios_base::sync_with_stdio(false), cin.tie(NULL);
+    int t = 1;
+    // cin>>t;
+    while(t--)solve();
+}
