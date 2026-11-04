@@ -1,86 +1,114 @@
 #include <bits/stdc++.h>
 using namespace std;
-// also solution for line segment trace 1
-const long long INF = 2e18; // Large negative infinity for max queries
 
-// Represents y = m * x + c
+const long long INF = 2e18; // Use -INF for max queries, +INF for min queries
+
+// Structure to represent a line y = m * x + c
 struct Line {
     long long m, c;
-    Line() : m(0), c(-INF) {}
+    
+    // Default constructor: Initializes with a "dummy" line that will always lose.
+    // For MAX queries, use -INF. If you need MIN queries, change c to INF.
+    Line() : m(0), c(-INF) {} 
+    
     Line(long long m, long long c) : m(m), c(c) {}
-    long long eval(long long x) {
-        return m * x + c;
+    
+    // Evaluates the y-value of the line at a specific x-coordinate
+    long long eval(long long x) { 
+        return m * x + c; 
     }
 };
 
-const int MAX_M = 1000005; // Assuming max M is up to 10^6
-Line tree_lc[4 * MAX_M];
+// Generic Li Chao Tree Structure
+struct LiChaoTree {
+    int max_x;
+    vector<Line> tree;
 
-// Standard Li Chao Tree insertion
-void insert_line(int node, int l, int r, Line line) {
-    if (l == r) {
-        if (line.eval(l) > tree_lc[node].eval(l)) {
-            tree_lc[node] = line;
+    // Initialize the tree with the maximum possible x-coordinate domain
+    LiChaoTree(int domain_size) {
+        max_x = domain_size;
+        // 4 * N is the standard segment tree size requirement
+        tree.assign(4 * max_x + 5, Line());
+    }
+
+    // INTERNAL: Core Li Chao logic to insert a line into a specific node
+    void _insert_line(int node, int l, int r, Line new_line) {
+        if (l == r) {
+            // Leaf node: just keep the line that gives a better value
+            if (new_line.eval(l) > tree[node].eval(l)) {
+                tree[node] = new_line;
+            }
+            return;
         }
-        return;
+        
+        int mid = l + (r - l) / 2;
+        
+        // Evaluate both lines at the left boundary and the midpoint
+        bool left_better = new_line.eval(l) > tree[node].eval(l);
+        bool mid_better = new_line.eval(mid) > tree[node].eval(mid);
+        
+        // The line that wins at the MIDPOINT becomes the permanent champion of this node
+        if (mid_better) {
+            swap(tree[node], new_line);
+        }
+        
+        // The "loser" line (now in new_line) is recursively pushed down to the child 
+        // where it still has a chance to win. 
+        // If they differed at the left boundary, they must intersect in the left half.
+        if (left_better != mid_better) {
+            _insert_line(2 * node, l, mid, new_line);
+        } else {
+            _insert_line(2 * node + 1, mid + 1, r, new_line);
+        }
     }
 
-    int mid = l + (r - l) / 2;
-
-    // Check which line is better at the boundaries and midpoint
-    bool left_better = line.eval(l) > tree_lc[node].eval(l);
-    bool mid_better = line.eval(mid) > tree_lc[node].eval(mid);
-
-    // The line that is better at the midpoint becomes the new dominant line for this node
-    if (mid_better) {
-        swap(tree_lc[node], line);
+    // INTERNAL: Breaks down a segment [ql, qr] into canonical segment tree nodes
+    void _add_segment(int node, int l, int r, int ql, int qr, Line new_line) {
+        if (ql > r || qr < l) return; // Completely outside the range
+        
+        // If the current node's range is completely covered by the segment
+        // we apply the standard Li Chao insertion to this subtree
+        if (ql <= l && r <= qr) {
+            _insert_line(node, l, r, new_line);
+            return;
+        }
+        
+        int mid = l + (r - l) / 2;
+        _add_segment(2 * node, l, mid, ql, qr, new_line);
+        _add_segment(2 * node + 1, mid + 1, r, ql, qr, new_line);
     }
 
-    // The "loser" line gets pushed down to the half where it could still be optimal
-    if (left_better != mid_better) {
-        insert_line(2 * node, l, mid, line);
-    } else {
-        insert_line(2 * node + 1, mid + 1, r, line);
-    }
-}
-
-// Query the maximum value at a specific x-coordinate
-long long query(int node, int l, int r, int x) {
-    long long ans = tree_lc[node].eval(x);
-    if (l == r) return ans;
-
-    int mid = l + (r - l) / 2;
-    if (x <= mid) {
-        ans = max(ans, query(2 * node, l, mid, x));
-    } else {
-        ans = max(ans, query(2 * node + 1, mid + 1, r, x));
-    }
-    return ans;
-}
-
-int main() {
-    // Fast I/O
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n;
-    long long m_max;
-    if (!(cin >> n >> m_max)) return 0;
-
-    // Read all n lines and insert them into the Li Chao Tree
-    for (int i = 0; i < n; i++) {
-        long long y1, y2;
-        cin >> y1 >> y2;
-        long long slope = (y2 - y1) / m_max;
-        long long intercept = y1;
-        insert_line(1, 0, m_max, Line(slope, intercept));
+    // INTERNAL: Point query to find the maximum y-value at coordinate x
+    long long _query(int node, int l, int r, int x) {
+        // We MUST evaluate the line stored at the current node
+        long long ans = tree[node].eval(x);
+        if (l == r) return ans;
+        
+        int mid = l + (r - l) / 2;
+        
+        // Recurse down the path to the leaf corresponding to x and take the maximum
+        if (x <= mid) {
+            ans = max(ans, _query(2 * node, l, mid, x));
+        } else {
+            ans = max(ans, _query(2 * node + 1, mid + 1, r, x));
+        }
+        return ans;
     }
 
-    // Query every integer coordinate from 0 to m
-    for (long long x = 0; x <= m_max; x++) {
-        cout << query(1, 0, m_max, x) << (x == m_max ? "" : " ");
-    }
-    cout << "\n";
+    // --- PUBLIC API ---
 
-    return 0;
-}
+    // 1. Use this to insert a line that spans the ENTIRE domain [0, max_x]
+    void add_global_line(long long m, long long c) {
+        _insert_line(1, 0, max_x, Line(m, c));
+    }
+
+    // 2. Use this to insert a line that is ONLY valid between [start_x, end_x]
+    void add_line_segment(long long m, long long c, int start_x, int end_x) {
+        _add_segment(1, 0, max_x, start_x, end_x, Line(m, c));
+    }
+
+    // 3. Use this to find the maximum value at a specific x-coordinate
+    long long get_max(int x) {
+        return _query(1, 0, max_x, x);
+    }
+};
