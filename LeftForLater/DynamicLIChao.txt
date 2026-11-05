@@ -1,0 +1,161 @@
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const long long INF = 2e18;
+
+struct Line {
+    long long m, c;
+    Line(long long m = 0, long long c = 0) : m(m), c(c) {}
+
+    long long eval(long long x) {
+        return m * x + c;
+    }
+};
+
+// Node now stores child indices
+struct Node {
+    Line max_line;
+    Line min_line;
+    int lc, rc; // Left child and Right child indices
+    
+    // Initialize children as -1 (meaning "not yet created")
+    Node() : max_line(0, -INF), min_line(0, INF), lc(-1), rc(-1) {}
+};
+
+struct DynamicLiChaoTree {
+    long long min_x, max_x;
+    vector<Node> tree;
+
+    DynamicLiChaoTree(long long min_x, long long max_x) {
+        this->min_x = min_x;
+        this->max_x = max_x;
+        tree.push_back(Node()); // Root is at index 0
+    }
+
+    // INTERNAL: Helper to dynamically allocate left child
+    void ensure_left(int node) {
+        if (tree[node].lc == -1) {
+            tree[node].lc = tree.size();
+            tree.push_back(Node());
+        }
+    }
+
+    // INTERNAL: Helper to dynamically allocate right child
+    void ensure_right(int node) {
+        if (tree[node].rc == -1) {
+            tree[node].rc = tree.size();
+            tree.push_back(Node());
+        }
+    }
+
+    void _insert_max(int node, long long l, long long r, Line new_line) {
+        long long mid = l + (r - l) / 2;
+        bool left_better = new_line.eval(l) > tree[node].max_line.eval(l);
+        bool mid_better = new_line.eval(mid) > tree[node].max_line.eval(mid);
+
+        if (mid_better) swap(tree[node].max_line, new_line);
+
+        if (l == r) return;
+
+        if (left_better != mid_better) {
+            ensure_left(node);
+            _insert_max(tree[node].lc, l, mid, new_line);
+        } else {
+            ensure_right(node);
+            _insert_max(tree[node].rc, mid + 1, r, new_line);
+        }
+    }
+
+    void _insert_min(int node, long long l, long long r, Line new_line) {
+        long long mid = l + (r - l) / 2;
+        bool left_better = new_line.eval(l) < tree[node].min_line.eval(l);
+        bool mid_better = new_line.eval(mid) < tree[node].min_line.eval(mid);
+
+        if (mid_better) swap(tree[node].min_line, new_line);
+
+        if (l == r) return;
+
+        if (left_better != mid_better) {
+            ensure_left(node);
+            _insert_min(tree[node].lc, l, mid, new_line);
+        } else {
+            ensure_right(node);
+            _insert_min(tree[node].rc, mid + 1, r, new_line);
+        }
+    }
+
+    void _add_segment(int node, long long l, long long r, long long ql, long long qr, Line new_line) {
+        if (ql > r || qr < l) return;
+
+        if (ql <= l && r <= qr) {
+            _insert_max(node, l, r, new_line);
+            _insert_min(node, l, r, new_line);
+            return;
+        }
+
+        long long mid = l + (r - l) / 2;
+        
+        // Only allocate children if the segment actually intersects their halves
+        if (ql <= mid) {
+            ensure_left(node);
+            _add_segment(tree[node].lc, l, mid, ql, qr, new_line);
+        }
+        if (qr > mid) {
+            ensure_right(node);
+            _add_segment(tree[node].rc, mid + 1, r, ql, qr, new_line);
+        }
+    }
+
+    long long _query_max(int node, long long l, long long r, long long x) {
+        if (node == -1) return -INF; // If node doesn't exist, it contributes nothing
+
+        long long ans = tree[node].max_line.eval(x);
+        if (l == r) return ans;
+
+        long long mid = l + (r - l) / 2;
+        if (x <= mid) ans = max(ans, _query_max(tree[node].lc, l, mid, x));
+        else ans = max(ans, _query_max(tree[node].rc, mid + 1, r, x));
+        
+        return ans;
+    }
+
+    long long _query_min(int node, long long l, long long r, long long x) {
+        if (node == -1) return INF; // If node doesn't exist, it contributes nothing
+
+        long long ans = tree[node].min_line.eval(x);
+        if (l == r) return ans;
+
+        long long mid = l + (r - l) / 2;
+        if (x <= mid) ans = min(ans, _query_min(tree[node].lc, l, mid, x));
+        else ans = min(ans, _query_min(tree[node].rc, mid + 1, r, x));
+        
+        return ans;
+    }
+
+    // --- PUBLIC API ---
+
+    void add_global_line(long long m, long long c) {
+        _insert_max(0, min_x, max_x, Line(m, c));
+        _insert_min(0, min_x, max_x, Line(m, c));
+    }
+
+    void add_line_segment(long long m, long long c, long long start_x, long long end_x) {
+        start_x = max(start_x, min_x);
+        end_x = min(end_x, max_x);
+        if (start_x > end_x) return;
+
+        _add_segment(0, min_x, max_x, start_x, end_x, Line(m, c));
+    }
+
+    long long get_max(long long x) {
+        if (x < min_x || x > max_x) return -INF;
+        return _query_max(0, min_x, max_x, x);
+    }
+
+    long long get_min(long long x) {
+        if (x < min_x || x > max_x) return INF;
+        return _query_min(0, min_x, max_x, x);
+    }
+};
