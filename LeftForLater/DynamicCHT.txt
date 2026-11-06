@@ -1,0 +1,56 @@
+#include <iostream>
+#include <set>
+#include <climits>
+#include <cassert>
+
+using namespace std;
+
+// Represents a line y = m*x + c
+// 'p' stores the x-coordinate where this line intersects the NEXT line in the hull.
+struct Line {
+    mutable long long m, c, p;
+    
+    // Sort lines by slope (for the multiset)
+    bool operator<(const Line& o) const { return m < o.m; }
+    
+    // Transparent comparator for querying by x-coordinate
+    bool operator<(long long x) const { return p < x; }
+};
+
+// LineContainer natively computes the MAXIMUM y-value at a given x.
+struct LineContainer : multiset<Line, less<>> {
+    // (for doubles, use inf = 1/.0, div(a,b) = a/b)
+    static const long long inf = LLONG_MAX;
+
+    // Floored division: correctly handles negative numbers
+    long long div(long long a, long long b) {
+        return a / b - ((a ^ b) < 0 && a % b);
+    }
+
+    // Calculates intersection of two adjacent lines in the set
+    // Returns true if line y makes line x redundant
+    bool isect(iterator x, iterator y) {
+        if (y == end()) { x->p = inf; return false; }
+        if (x->m == y->m) x->p = x->c > y->c ? inf : -inf;
+        else x->p = div(y->c - x->c, x->m - y->m);
+        return x->p >= y->p;
+    }
+
+    // Adds a line y = m*x + c to the hull
+    void add_line(long long m, long long c) {
+        auto z = insert({m, c, 0}), y = z++, x = y;
+        while (isect(y, z)) z = erase(z);
+        if (x != begin() && isect(--x, y)) isect(x, y = erase(y));
+        while ((y = x) != begin() && (--x)->p >= y->p)
+            isect(x, erase(y));
+    }
+
+    // Queries the maximum y-value at x
+    long long get_max(long long x) {
+        assert(!empty());
+        // Uses the transparent comparator to binary search for the first line
+        // whose intersection with the next line is >= x
+        auto l = *lower_bound(x);
+        return l.m * x + l.c;
+    }
+};
