@@ -77,3 +77,22 @@ struct StandardCHT {
         return hull[0].eval(x);
     }
 };
+struct MinCHT {
+    StandardCHT cht;
+
+    // Prerequisite: Slopes (m) must be inserted in strictly DECREASING order.
+    // By negating them, they are inserted into StandardCHT in increasing order.
+    void add_line(long long m, long long c) {
+        cht.add_line(-m, -c);
+    }
+
+    // Random queries O(log N)
+    long long get_min(long long x) {
+        return -cht.get_max(x);
+    }
+    
+    // Monotonic queries (increasing x) O(1)
+    long long get_min_monotonic(long long x) {
+        return -cht.get_max_monotonic(x);
+    }
+};
