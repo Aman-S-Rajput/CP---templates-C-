@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+
+using namespace std;
+
+const long long INF = 2e18;
+
+struct Line {
+    long long m, c;
+    long long eval(long long x) {
+        return m * x + c;
+    }
+};
+
+// Standard CHT for MAXIMUM queries.
+// PREREQUISITE: Lines MUST be added in strictly INCREASING order of slope (m).
+struct StandardCHT {
+    deque<Line> hull;
+
+    // Calculates the x-coordinate where line a and line b intersect
+    // Using long double prevents precision loss and integer division truncation issues
+    long double intersect(Line a, Line b) {
+        return (long double)(b.c - a.c) / (a.m - b.m);
+    }
+
+    // Adds a line y = m*x + c to the hull
+    // Slopes must be inserted in strictly increasing order: m1 <= m2 <= m3...
+    void add_line(long long m, long long c) {
+        Line cur = {m, c};
+        
+        // If the new line makes the last line redundant, remove the last line
+        // A line is redundant if its intersection with the new line happens 
+        // before or exactly at its intersection with the second-to-last line.
+        while (hull.size() >= 2) {
+            Line l1 = hull[hull.size() - 2];
+            Line l2 = hull.back();
+            
+            if (intersect(l1, cur) <= intersect(l1, l2)) {
+                hull.pop_back();
+            } else {
+                break;
+            }
+        }
+        hull.push_back(cur);
+    }
+
+    // --- QUERY METHOD 1: Random Queries O(log N) ---
+    // Use this if your x-coordinates are queried in a random, unsorted order.
+    long long get_max(long long x) {
+        if (hull.empty()) return -INF;
+
+        int l = 0, r = hull.size() - 1;
+        while (l < r) {
+            int mid = l + (r - l) / 2;
+            // Because the hull is upper convex, the y-values form a hill.
+            // We binary search for the peak at coordinate x.
+            if (hull[mid].eval(x) <= hull[mid + 1].eval(x)) {
+                l = mid + 1;
+            } else {
+                r = mid;
+            }
+        }
+        return hull[l].eval(x);
+    }
+
+    // --- QUERY METHOD 2: Monotonic Queries O(1) Amortized ---
+    // Use this if your x-coordinates are strictly INCREASING.
+    long long get_max_monotonic(long long x) {
+        if (hull.empty()) return -INF;
+
+        // While the next line gives a better answer than the current line,
+        // move the pointer forward (discard the current line).
+        while (hull.size() >= 2 && hull[0].eval(x) <= hull[1].eval(x)) {
+            hull.pop_front();
+        }
+        return hull[0].eval(x);
+    }
+};
