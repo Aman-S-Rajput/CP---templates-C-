@@ -54,3 +54,16 @@ struct LineContainer : multiset<Line, less<>> {
         return l.m * x + l.c;
     }
 };
+struct MinCHT {
+    LineContainer hull;
+
+    // To find the minimum, we insert the negative of the line
+    void add_line(long long m, long long c) {
+        hull.add_line(-m, -c);
+    }
+
+    // We negate the result of the max query to get the min
+    long long get_min(long long x) {
+        return -hull.get_max(x);
+    }
+};
