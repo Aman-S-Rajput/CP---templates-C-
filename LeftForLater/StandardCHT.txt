@@ -3,7 +3,11 @@
 #include <deque>
 
 using namespace std;
-
+/*requirements
+1. slopes must be monotonic
+2. if queries -> random-> use get_min(x) tc :   O(log N)
+3. if queries -> sorted -> used get_min_monotonic(x): tc -> O(1)
+*/
 const long long INF = 2e18;
 
 struct Line {
