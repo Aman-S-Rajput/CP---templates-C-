@@ -1,0 +1,148 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const double PI = acos(-1.0);
+
+/**
+ * Custom lightweight Complex Number struct for faster FFT.
+ * std::complex is often too slow for tight time limits.
+ */
+struct cd {
+    double x, y;
+    cd(double x = 0, double y = 0) : x(x), y(y) {}
+
+    cd operator+(const cd& o) const { return cd(x + o.x, y + o.y); }
+    cd operator-(const cd& o) const { return cd(x - o.x, y - o.y); }
+    cd operator*(const cd& o) const { return cd(x * o.x - y * o.y, x * o.y + y * o.x); }
+
+    // Assignment operators for cleaner code
+    void operator/=(const double& d) { x /= d; y /= d; }
+};
+
+/**
+ * Fast Fourier Transform (Cooley-Tukey)
+ * @param a: The polynomial represented as a vector of custom complex numbers.
+ * @param invert: If true, computes the Inverse FFT (IFFT).
+ */
+void fft(vector<cd>& a, bool invert) {
+    int n = a.size();
+
+    // Bit-reversal permutation
+    for (int i = 1, j = 0; i < n; i++) {
+        int bit = n >> 1;
+        for (; j & bit; bit >>= 1) {
+            j ^= bit;
+        }
+        j ^= bit;
+
+        if (i < j) {
+            swap(a[i], a[j]);
+        }
+    }
+
+    // Iterative FFT
+    for (int len = 2; len <= n; len <<= 1) {
+        // Calculate the primitive root of unity
+        double ang = 2 * PI / len * (invert ? -1 : 1);
+        cd wlen(cos(ang), sin(ang));
+
+        for (int i = 0; i < n; i += len) {
+            cd w(1, 0); // w = wlen^j
+            for (int j = 0; j < len / 2; j++) {
+                cd u = a[i + j];
+                cd v = a[i + j + len / 2] * w;
+
+                // Butterfly operation
+                a[i + j] = u + v;
+                a[i + j + len / 2] = u - v;
+
+                w = w * wlen;
+            }
+        }
+    }
+
+    // If computing IFFT, divide by N
+    if (invert) {
+        for (int i = 0; i < n; i++) {
+            a[i] /= n;
+        }
+    }
+}
+
+/**
+ * Multiplies two polynomials represented by integer coefficient vectors.
+ * @param a: Coefficients of the first polynomial.
+ * @param b: Coefficients of the second polynomial.
+ * @return: Coefficients of the multiplied polynomial.
+ */
+vector<long long> multiply(vector<int> const& a, vector<int> const& b) {
+    if (a.empty() || b.empty()) return {};
+
+    // Load integer coefficients into our custom complex struct
+    vector<cd> fa(a.size()), fb(b.size());
+    for (int i = 0; i < (int)a.size(); i++) fa[i] = cd(a[i], 0);
+    for (int i = 0; i < (int)b.size(); i++) fb[i] = cd(b[i], 0);
+
+    // The size of the polynomials must be padded to the nearest power of 2
+    int n = 1;
+    while (n < (int)(a.size() + b.size())) {
+        n <<= 1;
+    }
+
+    fa.resize(n);
+    fb.resize(n);
+
+    // Step 1: Evaluate the polynomials at the roots of unity
+    fft(fa, false);
+    fft(fb, false);
+
+    // Step 2: Point-wise multiplication
+    for (int i = 0; i < n; i++) {
+        fa[i] = fa[i] * fb[i];
+    }
+
+    // Step 3: Interpolate to find the resulting coefficients
+    fft(fa, true);
+
+    vector<long long> result(n);
+    for (int i = 0; i < n; i++) {
+        // Round to nearest integer to avoid floating-point precision issues
+        result[i] = round(fa[i].x);
+    }
+
+    // (Optional) Remove leading zeros to keep the vector size minimal
+    while (result.size() > 1 && result.back() == 0) {
+        result.pop_back();
+    }
+
+    return result;
+}
+
+// ------------------- USAGE EXAMPLE -------------------
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int k, n, m;
+    cin>>k>>n>>m;
+    vector<int>a(k), b(k);
+    for(int i = 0;i < n;i++){
+        int x;
+        cin>>x;
+        --x;
+        a[x]++;
+    }
+    for(int i = 0;i < m;i++){
+        int x;cin>>x;--x;
+        b[x]++;
+    }
+    vector<long long> res = multiply(a, b);
+
+    for (long long coeff : res) {
+        cout << coeff << " ";
+    }
+    for(int i = 0;i < 2 * k -1 - res.size();i++)cout<<0<<' ';
+    cout << "\n";
+
+    return 0;
+}
