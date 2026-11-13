@@ -1,29 +1,3 @@
-#include<bits/stdc++.h>
-using namespace std;
-#define int long long
-#define  nl "\n"
-#define f first
-#define s second
-const int mod = 1e9 + 7, inf = 1e18;
-#define all(a) a.begin(),a.end()
-#define forn(a, c) for (int (a) = 0; (a) < (c); (a)++)
-#define cin(v) for(auto &i:v){cin>>i;}
-#define cout(v) for(auto &i:v){cout<<i<<" ";}cout<<nl;
-#define dbg(args...) { string _s = #args; replace(_s.begin(), _s.end(), ',', ' '); stringstream _ss(_s); istream_iterator<string> _it(_ss); pri(_it, args); cout<<nl;}
-void pri(istream_iterator<string> it) {}
-template<typename T, typename... Args>
-void pri(istream_iterator<string> it, T a, Args... args) {cout << *it << "  " << a << nl;pri(++it, args...);}
-string dtobin(int n,int k = 0){string res = "";while(n>0 || k>0){k--;if(n&1){res += "1";}else{res += "0";}n>>= 1;}reverse(res.begin(),res.end());return res;}
-int binexp(int a,int b){if(b==0){return 1;}int res = 1;while(b){if(b&1){res*= a;}b>>=1; a *= a;}return res;}
-mt19937_64 RNG(chrono::steady_clock::now().time_since_epoch().count());
-/*
-ROA
-1.pivot
-2.nec vs suf
-3.clear/deterministic
-4. think twice code once
-*/
-
 struct P
 {
     int x, y;
@@ -135,16 +109,59 @@ long long minEuc(vector<P>& v) {
     }
     return d;
 }
+struct Line {
+    int a, b, c; // Represents line equation: ax + by + c = 0
+    P p1, p2;
 
-void solve()
-{
+    // Construct line from two points
+    Line(P _p1, P _p2) {
+        p1 = _p1;
+        p2 = _p2;
+        a = p1.y - p2.y;
+        b = p2.x - p1.x;
+        c = -a * p1.x - b * p1.y;
+    }
 
-}
+    // Get exact y for a given x
+    double get_y(double x) const {
+        if (b == 0) return inf; // Vertical line (undefined/infinite y)
+        return (double)(-a * x - c) / b;
+    }
 
-signed main()
-{
-    ios_base::sync_with_stdio(false), cin.tie(NULL);
-    int t = 1;
-    // cin>>t;
-    while(t--) solve();
-}
+    // Get exact x for a given y
+    double get_x(double y) const {
+        if (a == 0) return inf; // Horizontal line (undefined/infinite x)
+        return (double)(-b * y - c) / a;
+    }
+
+    // Get exact shortest distance from any point p to this line
+    double distToPoint(const P& p) const {
+        return (double)abs(a * p.x + b * p.y + c) / sqrt(a * a + b * b);
+    }
+
+    // Check if this line is parallel to another line
+    bool isParallel(const Line& other) const {
+        return a * other.b == b * other.a;
+    }
+
+    // Check if this line is perpendicular (orthogonal) to another line
+    bool isOrthogonal(const Line& other) const {
+        return a * other.a + b * other.b == 0;
+    }
+
+    // Get intersection point of this line with another line
+    // Returns pair<double, double>. Returns {inf, inf} if lines are parallel.
+    pair<double, double> intersect(const Line& other) const {
+        int det = a * other.b - b * other.a;
+        if (det == 0) return {inf, inf}; // Parallel lines
+        double x = (double)(b * other.c - c * other.b) / det;
+        double y = (double)(c * other.a - a * other.c) / det;
+        return {x, y};
+    }
+    
+    // Check if a point lies exactly on this infinite line
+    bool contains(const P& p) const {
+        return a * p.x + b * p.y + c == 0;
+    }
+};
+
