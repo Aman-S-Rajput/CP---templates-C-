@@ -1,0 +1,33 @@
+bool has_hamiltonian_path_dag(int n, const set<pair<int, int>>& edges) {
+    vector<vector<int>> adj(n);
+    vector<int> in_degree(n, 0);
+
+    for (const auto& edge : edges) {
+        adj[edge.first - 1].push_back(edge.second - 1);
+        in_degree[edge.second - 1]++;
+    }
+
+    queue<int> q;
+    for (int i = 0; i < n; i++) {
+        if (in_degree[i] == 0) {
+            q.push(i);
+        }
+    }
+
+    int visited = 0;
+    while (!q.empty()) {
+        if (q.size() > 1) return false;
+
+        int u = q.front();
+        q.pop();
+        visited++;
+
+        for (int v : adj[u]) {
+            if (--in_degree[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+
+    return visited == n;
+}
